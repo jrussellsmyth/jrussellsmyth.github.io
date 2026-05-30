@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Space Invaders</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,7 +16,7 @@
     color: #fff;
     overflow: hidden;
     width: 100%;
-    height: 100%;
+    height: 100dvh;
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -24,7 +27,7 @@
   #shell {
     display: flex;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     align-items: stretch;
   }
 
@@ -469,6 +472,12 @@ function resetMarch() { marchIndex = 0; }
     resetMarch();
     // Init audio on first user gesture
     try { getAudio(); } catch(e) {}
+    // Request fullscreen on mobile to hide address bar
+    try {
+      var fsEl = document.documentElement;
+      if (fsEl.requestFullscreen) fsEl.requestFullscreen();
+      else if (fsEl.webkitRequestFullscreen) fsEl.webkitRequestFullscreen();
+    } catch(e) {}
     requestAnimationFrame(gameLoop);
   }
 
