@@ -99,6 +99,26 @@
     transition: left 0.05s;
   }
 
+  /* ── Quit button ── */
+  #quit-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 30;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.4);
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #quit-btn:active { background: rgba(255,0,0,0.2); color: #ff4444; border-color: #ff4444; }
+  @media (pointer: fine) { #quit-btn { display: none; } }
+
   /* ── Game area (center) ── */
   #game-area {
     flex: 1;
@@ -251,6 +271,7 @@
   <!-- Game area -->
   <div id="game-area">
     <div id="screen">
+      <button id="quit-btn" aria-label="QUIT">QUIT</button>
       <canvas id="game" width="640" height="480"></canvas>
       <div id="overlay">
         <div class="title">SPACE INVADERS</div>
@@ -505,6 +526,7 @@ if ('serviceWorker' in navigator) {
   var keys = {};
   document.addEventListener('keydown', function(e) {
     keys[e.code] = true;
+    if (e.code === 'KeyQ' && gameRunning) { gameOverFn(); return; }
     if (e.code === 'Space') {
       e.preventDefault();
       if (gameRunning && !spaceDown) spaceFireRequested = true;
@@ -530,6 +552,12 @@ if ('serviceWorker' in navigator) {
   }
   setupFireBtn('fire-left');
   setupFireBtn('fire-right');
+
+  // ── Quit button ──
+  var qb = document.getElementById('quit-btn');
+  qb.addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); if (gameRunning) gameOverFn(); });
+  qb.addEventListener('click', function(e) { e.stopPropagation(); if (gameRunning) gameOverFn(); });
+
 
   // ── D-pad touch ──
   function setupDpad(id, indId) {
