@@ -1,0 +1,25 @@
+{
+  "name": "Space Invaders",
+  "short_name": "Invaders",
+  "description": "A faithful clone of the classic Space Invaders arcade game",
+  "start_url": "/demos/invaders.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["games"],
+  "icons": [
+    {
+      "src": "/demos/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/demos/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
