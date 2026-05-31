@@ -734,7 +734,7 @@ if ('serviceWorker' in navigator) {
     if (fireCooldown > 0) fireCooldown--;
 
     // Input — slightly slower on mobile for better D-pad control
-    var moveSpeed = (touchMoveX !== 0) ? player.speed * 0.75 : player.speed;
+    var moveSpeed = (touchMoveX !== 0) ? player.speed * 0.5 : player.speed;
     player.dx = 0;
     if (keys['ArrowLeft'] || keys['KeyA'] || touchMoveX === -1) player.dx = -moveSpeed;
     if (keys['ArrowRight'] || keys['KeyD'] || touchMoveX === 1) player.dx = moveSpeed;
