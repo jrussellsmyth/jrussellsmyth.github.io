@@ -764,7 +764,7 @@ if ('serviceWorker' in navigator) {
     // Enemy fire
     enemyFireTimer++;
     var frMult = Math.pow(2/3, wave - 1);
-    var fireRate = Math.max(4, Math.round(30 * frMult));
+    var fireRate = Math.max(4, Math.round(60 * frMult));
     if (enemyFireTimer >= fireRate) { enemyFire(); enemyFireTimer = 0; }
 
     // UFO
