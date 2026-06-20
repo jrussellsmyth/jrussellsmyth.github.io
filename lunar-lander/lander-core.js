@@ -58,8 +58,8 @@ function updatePhysicsState(state, dt) {
 }
 
 function calculateLandingMultiplier(padWidth) {
-  if (padWidth <= 25) return 10;
-  if (padWidth <= 50) return 5;
+  if (padWidth <= 38) return 10;
+  if (padWidth <= 55) return 5;
   return 2;
 }
 
@@ -106,7 +106,7 @@ function generateTerrain(width, height, count, difficulty) {
 
   // Inject flat landing pads
   const padCount = 3;
-  const padWidths = [60, 40, 20]; // Wide (2x), Medium (5x), Narrow (10x)
+  const padWidths = [80, 50, 36]; // Wide (2x), Medium (5x), Narrow (10x)
   const padMultipliers = [2, 5, 10];
   const occupied = new Array(segments + 1).fill(false);
   

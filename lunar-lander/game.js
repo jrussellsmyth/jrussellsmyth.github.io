@@ -183,6 +183,11 @@ let fuelText;
 let levelLivesText;
 let speedText;
 
+// Mobile touch button state
+window.isThrustingButtonActive = false;
+window.isLeftButtonActive = false;
+window.isRightButtonActive = false;
+
 // Screen overlay texts
 let screenTitleText;
 let screenDetailText;
@@ -395,6 +400,75 @@ function create() {
     if (rightSteerSlider) {
         rightSteerSlider.addEventListener('touchend', releaseSteer);
         rightSteerSlider.addEventListener('mouseup', releaseSteer);
+    }
+
+    // Touch Button bindings for Mobile Portrait Controls
+    const btnThrust = document.getElementById('btn-thrust');
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
+
+    if (btnThrust) {
+        const startThrust = (e) => {
+            e.preventDefault();
+            audio.init();
+            window.isThrustingButtonActive = true;
+            btnThrust.classList.add('active');
+        };
+        const stopThrust = (e) => {
+            e.preventDefault();
+            window.isThrustingButtonActive = false;
+            btnThrust.classList.remove('active');
+            const leftThrustSlider = document.getElementById('thrust-left');
+            const rightThrustSlider = document.getElementById('thrust-right');
+            if (leftThrustSlider) leftThrustSlider.value = 0;
+            if (rightThrustSlider) rightThrustSlider.value = 0;
+        };
+        btnThrust.addEventListener('mousedown', startThrust);
+        btnThrust.addEventListener('touchstart', startThrust, { passive: false });
+        btnThrust.addEventListener('mouseup', stopThrust);
+        btnThrust.addEventListener('touchend', stopThrust);
+        btnThrust.addEventListener('touchcancel', stopThrust);
+        btnThrust.addEventListener('mouseleave', stopThrust);
+    }
+
+    if (btnLeft) {
+        const startLeft = (e) => {
+            e.preventDefault();
+            audio.init();
+            window.isLeftButtonActive = true;
+            btnLeft.classList.add('active');
+        };
+        const stopLeft = (e) => {
+            e.preventDefault();
+            window.isLeftButtonActive = false;
+            btnLeft.classList.remove('active');
+        };
+        btnLeft.addEventListener('mousedown', startLeft);
+        btnLeft.addEventListener('touchstart', startLeft, { passive: false });
+        btnLeft.addEventListener('mouseup', stopLeft);
+        btnLeft.addEventListener('touchend', stopLeft);
+        btnLeft.addEventListener('touchcancel', stopLeft);
+        btnLeft.addEventListener('mouseleave', stopLeft);
+    }
+
+    if (btnRight) {
+        const startRight = (e) => {
+            e.preventDefault();
+            audio.init();
+            window.isRightButtonActive = true;
+            btnRight.classList.add('active');
+        };
+        const stopRight = (e) => {
+            e.preventDefault();
+            window.isRightButtonActive = false;
+            btnRight.classList.remove('active');
+        };
+        btnRight.addEventListener('mousedown', startRight);
+        btnRight.addEventListener('touchstart', startRight, { passive: false });
+        btnRight.addEventListener('mouseup', stopRight);
+        btnRight.addEventListener('touchend', stopRight);
+        btnRight.addEventListener('touchcancel', stopRight);
+        btnRight.addEventListener('mouseleave', stopRight);
     }
 
     // Suspend and resume the Web Audio context when the tab loses/gains focus
@@ -688,33 +762,37 @@ function update(time, delta) {
         // Read desktop cursor inputs for testing vector logic
         let desiredThrust = landerState.thrust;
 
-        // Check keyboard input for thrust (Arrow Up or W)
-        const isKeyboardThrusting = (cursorKeys.up && cursorKeys.up.isDown) || (this.wasd && this.wasd.up && this.wasd.up.isDown);
+        // Check keyboard or mobile button input for thrust (Arrow Up, W, or mobile button)
+        const isThrusting = (cursorKeys.up && cursorKeys.up.isDown) || 
+                            (this.wasd && this.wasd.up && this.wasd.up.isDown) ||
+                            window.isThrustingButtonActive;
         
-        if (isKeyboardThrusting) {
+        if (isThrusting) {
             desiredThrust = 1.0;
-            // Also update the slider UI values to sync when keyboard is held
+            // Also update the slider UI values to sync when keyboard/button is held
             const leftThrustSlider = document.getElementById('thrust-left');
             const rightThrustSlider = document.getElementById('thrust-right');
             if (leftThrustSlider) leftThrustSlider.value = 100;
             if (rightThrustSlider) rightThrustSlider.value = 100;
             this.wasKeyboardThrusting = true;
-        } else if (this.wasKeyboardThrusting) {
-            desiredThrust = 0;
+        } else if (this.wasKeyboardThrusting || window.isThrustingButtonActive === false) {
+            // Read from slider if not active keyboard/button thrusting
             const leftThrustSlider = document.getElementById('thrust-left');
-            const rightThrustSlider = document.getElementById('thrust-right');
-            if (leftThrustSlider) leftThrustSlider.value = 0;
-            if (rightThrustSlider) rightThrustSlider.value = 0;
+            desiredThrust = leftThrustSlider ? parseFloat(leftThrustSlider.value) / 100 : 0;
             this.wasKeyboardThrusting = false;
         }
 
-        // Steer angle blending (Keyboard arrow / WASD override touch steer slider)
-        if ((cursorKeys.left && cursorKeys.left.isDown) || (this.wasd && this.wasd.left && this.wasd.left.isDown)) {
+        // Steer angle blending (Keyboard arrow / WASD or mobile buttons override touch steer slider)
+        if ((cursorKeys.left && cursorKeys.left.isDown) || 
+            (this.wasd && this.wasd.left && this.wasd.left.isDown) ||
+            window.isLeftButtonActive) {
             landerState.angle -= 90 * dt;
-        } else if ((cursorKeys.right && cursorKeys.right.isDown) || (this.wasd && this.wasd.right && this.wasd.right.isDown)) {
+        } else if ((cursorKeys.right && cursorKeys.right.isDown) || 
+                   (this.wasd && this.wasd.right && this.wasd.right.isDown) ||
+                   window.isRightButtonActive) {
             landerState.angle += 90 * dt;
         } else if (landerState.targetSteerRate !== undefined) {
-            // Apply slider rotational velocity
+            // Apply slider rotational velocity (for compatibility with tests)
             landerState.angle += landerState.targetSteerRate * dt;
         }
 

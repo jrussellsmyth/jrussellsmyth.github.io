@@ -15,9 +15,9 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 </head>
 <body>
-    <div id="portrait-warning">
+    <div id="landscape-warning">
         <h1>ROTATE DEVICE</h1>
-        <p>PLEASE ROTATE YOUR DEVICE TO LANDSCAPE MODE TO PLAY.</p>
+        <p>PLEASE ROTATE YOUR DEVICE TO PORTRAIT MODE TO PLAY.</p>
     </div>
     <div id="game-wrapper">
         <div class="gutter left-gutter">
@@ -49,6 +49,15 @@
                 <div class="slider-container">
                     <input type="range" class="slider horizontal-slider" id="steer-right" min="-45" max="45" value="0">
                 </div>
+            </div>
+        </div>
+
+        <!-- Touch Controls for Mobile Portrait -->
+        <div id="mobile-controls">
+            <button class="control-btn" id="btn-thrust">THRUST</button>
+            <div class="rotate-container">
+                <button class="control-btn" id="btn-left">ROTATE L</button>
+                <button class="control-btn" id="btn-right">ROTATE R</button>
             </div>
         </div>
     </div>
