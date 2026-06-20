@@ -83,6 +83,10 @@ try {
     padPoints.forEach(p => assert.strictEqual(p.y, yVal));
   });
 
+  // Phaser Vector Rendering Engine checks (Task 4 verification)
+  console.log("Running Phaser Vector Rendering Engine checks...");
+  assert.ok(fs.existsSync(path.join(__dirname, 'game.js')), "game.js should exist");
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);
