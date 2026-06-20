@@ -174,9 +174,9 @@ try {
   assert.strictEqual(collisionResult.collided, true);
   assert.ok(collisionResult.collisionY >= 400);
 
-  // Lander out of bounds
+  // Lander wraps around bounds horizontally (should not be collided at y: 100 in the air)
   const oobState = { x: -10, y: 100, vx: 0, vy: 10, angle: 0 };
-  assert.strictEqual(Core.checkCollision(oobState, mockTerrain).collided, true);
+  assert.strictEqual(Core.checkCollision(oobState, mockTerrain).collided, false);
 
   console.log("ALL TESTS PASSED!");
 } catch (err) {

@@ -36,8 +36,15 @@ function updatePhysicsState(state, dt) {
   // Integrate velocity and position
   const vx = state.vx + ax * dt;
   const vy = state.vy + ay * dt;
-  const x = state.x + vx * dt;
+  let x = state.x + vx * dt;
   const y = state.y + vy * dt;
+
+  // Wrap x coordinates horizontally
+  if (x < 0) {
+    x += 800;
+  } else if (x > 800) {
+    x -= 800;
+  }
 
   return {
     x,
@@ -75,9 +82,10 @@ function generateTerrain(width, height, count, difficulty) {
   const dx = width / segments;
   const heights = new Array(segments + 1);
 
-  // Initial boundary heights
-  heights[0] = height - 100 - Math.random() * 150;
-  heights[segments] = height - 100 - Math.random() * 150;
+  // Initial boundary heights (must be identical for seamless loop wrap-around)
+  const boundaryHeight = height - 100 - Math.random() * 150;
+  heights[0] = boundaryHeight;
+  heights[segments] = boundaryHeight;
 
   // Midpoint displacement logic
   function displace(left, right, roughness) {
@@ -183,16 +191,18 @@ function generateTerrain(width, height, count, difficulty) {
 
 function getTerrainHeight(terrain, x) {
   if (!terrain || !terrain.points || terrain.points.length === 0) return 600;
-  if (x <= 0) return terrain.points[0].y;
-  if (x >= 800) {
-    return terrain.points[terrain.points.length - 1].y;
+  
+  // Wrap x coordinates to [0, 800]
+  let checkX = x % 800;
+  if (checkX < 0) {
+    checkX += 800;
   }
   
   const segments = terrain.points.length - 1;
   const width = terrain.points[segments].x;
   const dx = width / segments;
   
-  const index = Math.floor(x / dx);
+  const index = Math.floor(checkX / dx);
   if (index < 0 || index >= segments) {
     return 600;
   }
@@ -202,13 +212,13 @@ function getTerrainHeight(terrain, x) {
   
   if (!p1 || !p2) return 600;
   
-  const t = (x - p1.x) / (p2.x - p1.x);
+  const t = (checkX - p1.x) / (p2.x - p1.x);
   return p1.y + t * (p2.y - p1.y);
 }
 
 function checkCollision(landerState, terrain) {
-  if (landerState.x < 0 || landerState.x > 800 || landerState.y > 600) {
-    return { collided: true, collisionX: landerState.x, collisionY: Math.min(landerState.y, 600) };
+  if (landerState.y > 600) {
+    return { collided: true, collisionX: landerState.x, collisionY: 600 };
   }
 
   const rad = (landerState.angle * Math.PI) / 180;

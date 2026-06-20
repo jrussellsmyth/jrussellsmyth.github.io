@@ -171,6 +171,7 @@ const game = new Phaser.Game(config);
 
 let graphics;
 let landerGraphics;
+let landerGraphicsWrap;
 let terrain;
 let landerState;
 let cursorKeys;
@@ -217,6 +218,7 @@ function create() {
     currentScene = this;
     graphics = this.add.graphics();
     landerGraphics = this.add.graphics();
+    landerGraphicsWrap = this.add.graphics();
     cursorKeys = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -785,6 +787,22 @@ function update(time, delta) {
               drawVectorLander(landerGraphics, 0, 0, 0, landerState.thrust);
               landerGraphics.setPosition(landerState.x, landerState.y);
               landerGraphics.setAngle(landerState.angle);
+
+              // Render wrapping double-draw
+              landerGraphicsWrap.clear();
+              if (landerState.x < 40) {
+                  landerGraphicsWrap.setVisible(true);
+                  drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
+                  landerGraphicsWrap.setPosition(landerState.x + 800, landerState.y);
+                  landerGraphicsWrap.setAngle(landerState.angle);
+              } else if (landerState.x > 760) {
+                  landerGraphicsWrap.setVisible(true);
+                  drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
+                  landerGraphicsWrap.setPosition(landerState.x - 800, landerState.y);
+                  landerGraphicsWrap.setAngle(landerState.angle);
+              } else {
+                  landerGraphicsWrap.setVisible(false);
+              }
           }
       } else if (gameState === STATE_SUCCESS) {
           audio.setThrust(0);
@@ -794,15 +812,18 @@ function update(time, delta) {
           drawVectorLander(landerGraphics, 0, 0, 0, 0);
           landerGraphics.setPosition(landerState.x, landerState.y);
           landerGraphics.setAngle(landerState.angle);
+          landerGraphicsWrap.setVisible(false);
       } else if (gameState === STATE_CRASHED) {
           audio.setThrust(0);
           audio.stopWarningAlarm();
           landerGraphics.clear();
+          landerGraphicsWrap.setVisible(false);
           updateAndDrawDebris(graphics, dt);
       } else {
           audio.setThrust(0);
           audio.stopWarningAlarm();
           landerGraphics.clear();
+          landerGraphicsWrap.setVisible(false);
       }
 
     // Update HUD Stats
