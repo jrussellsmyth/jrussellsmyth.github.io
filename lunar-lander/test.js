@@ -87,6 +87,36 @@ try {
   console.log("Running Phaser Vector Rendering Engine checks...");
   assert.ok(fs.existsSync(path.join(__dirname, 'game.js')), "game.js should exist");
 
+  // Web Audio Synth checks (Task 5 verification)
+  console.log("Running Web Audio Synth checks...");
+  const gamePath = path.join(__dirname, 'game.js');
+  const gameContent = fs.readFileSync(gamePath, 'utf8');
+
+  // Verify class SynthEngine is defined and instantiated
+  assert.ok(gameContent.includes('class SynthEngine'), "game.js must define SynthEngine class");
+  
+  const expectedMethods = [
+    'init()',
+    'setThrust(',
+    'playThrust(',
+    'playLowFuelAlarm()',
+    'playExplosion()',
+    'playSuccess()',
+    'startWarningAlarm()',
+    'stopWarningAlarm()'
+  ];
+  
+  expectedMethods.forEach(method => {
+    assert.ok(gameContent.includes(method), `SynthEngine must define ${method}`);
+  });
+
+  assert.ok(
+    gameContent.includes('const audio = new SynthEngine(') || 
+    gameContent.includes('let audio = new SynthEngine(') || 
+    gameContent.match(/(const|let|var)\s+audio\s*=\s*new\s+SynthEngine\(/),
+    "game.js must instantiate SynthEngine as audio"
+  );
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);

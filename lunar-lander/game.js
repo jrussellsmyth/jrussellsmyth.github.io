@@ -1,4 +1,138 @@
 // lunar-lander/game.js
+class SynthEngine {
+    constructor() {
+        this.ctx = null;
+        this.thrustGain = null;
+        this.thrustOsc = null;
+        this.alarmInterval = null;
+    }
+
+    init() {
+        if (this.ctx) return;
+        const AudioContext = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+        if (!AudioContext) return;
+        try {
+            this.ctx = new AudioContext();
+
+            // Thrust node chain: Noise/Triangle mix
+            this.thrustGain = this.ctx.createGain();
+            this.thrustGain.gain.value = 0;
+            this.thrustGain.connect(this.ctx.destination);
+
+            // Triangle low engine hum
+            this.thrustOsc = this.ctx.createOscillator();
+            this.thrustOsc.type = 'triangle';
+            this.thrustOsc.frequency.value = 45;
+            
+            // Noise Generator for rumble
+            const bufferSize = this.ctx.sampleRate * 2;
+            const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            const noiseNode = this.ctx.createBufferSource();
+            noiseNode.buffer = noiseBuffer;
+            noiseNode.loop = true;
+
+            const noiseFilter = this.ctx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 150;
+
+            noiseNode.connect(noiseFilter);
+            noiseFilter.connect(this.thrustGain);
+            this.thrustOsc.connect(this.thrustGain);
+
+            noiseNode.start(0);
+            this.thrustOsc.start(0);
+        } catch (e) {
+            console.warn("Failed to initialize AudioContext:", e);
+        }
+    }
+
+    setThrust(level) {
+        if (!this.ctx) return;
+        // Ramp gain values smoothly to avoid digital pops
+        const targetGain = level * 0.15;
+        this.thrustGain.gain.setTargetAtTime(targetGain, this.ctx.currentTime, 0.05);
+        this.thrustOsc.frequency.setTargetAtTime(45 + level * 50, this.ctx.currentTime, 0.1);
+    }
+
+    playThrust(intensity) {
+        this.setThrust(intensity);
+    }
+
+    playLowFuelAlarm() {
+        this.startWarningAlarm();
+    }
+
+    playExplosion() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.exponentialRampToValueAtTime(10, now + 1.5);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 1.6);
+    }
+
+    playSuccess() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+        notes.forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.15);
+            gain.gain.setValueAtTime(0, now + i * 0.15);
+            gain.gain.linearRampToValueAtTime(0.1, now + i * 0.15 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.4);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.15);
+            osc.stop(now + i * 0.15 + 0.5);
+        });
+    }
+
+    startWarningAlarm() {
+        if (this.alarmInterval) return;
+        this.alarmInterval = setInterval(() => {
+            if (!this.ctx) return;
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.2);
+        }, 400);
+    }
+
+    stopWarningAlarm() {
+        if (this.alarmInterval) {
+            clearInterval(this.alarmInterval);
+            this.alarmInterval = null;
+        }
+    }
+}
+
+const audio = new SynthEngine();
+
 const config = {
     type: Phaser.AUTO,
     parent: 'game-container',
@@ -87,6 +221,23 @@ function create() {
 
     resetLander();
     generateNewLevel(this);
+
+    // Initialize audio on first user interaction gesture to unlock browser AudioContext autoplay policy
+    const initAudioOnInteraction = () => {
+        audio.init();
+        window.removeEventListener('keydown', initAudioOnInteraction);
+        window.removeEventListener('pointerdown', initAudioOnInteraction);
+        window.removeEventListener('mousedown', initAudioOnInteraction);
+        window.removeEventListener('touchstart', initAudioOnInteraction);
+        window.removeEventListener('click', initAudioOnInteraction);
+        window.removeEventListener('wheel', initAudioOnInteraction);
+    };
+    window.addEventListener('keydown', initAudioOnInteraction);
+    window.addEventListener('pointerdown', initAudioOnInteraction);
+    window.addEventListener('mousedown', initAudioOnInteraction);
+    window.addEventListener('touchstart', initAudioOnInteraction);
+    window.addEventListener('click', initAudioOnInteraction);
+    window.addEventListener('wheel', initAudioOnInteraction);
 }
 
 function resetLander() {
@@ -209,8 +360,18 @@ function update(time, delta) {
         landerState.thrust = desiredThrust;
         landerState = window.LanderCore.updatePhysicsState(landerState, dt);
 
+        audio.setThrust(landerState.thrust);
+        if (landerState.fuel < 200 && landerState.fuel > 0) {
+            audio.startWarningAlarm();
+        } else {
+            audio.stopWarningAlarm();
+        }
+
         // Render ship
         drawVectorLander(graphics, landerState.x, landerState.y, landerState.angle, landerState.thrust);
+    } else {
+        audio.setThrust(0);
+        audio.stopWarningAlarm();
     }
 
     // Update HUD Stats
