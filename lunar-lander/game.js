@@ -24,6 +24,11 @@ let landerState;
 let cursorKeys;
 let stars = [];
 let padTexts = [];
+let currentScene;
+let scoreText;
+let fuelText;
+let levelLivesText;
+let speedText;
 
 // Safe parameters
 let score = 0;
@@ -42,6 +47,7 @@ function preload() {
 }
 
 function create() {
+    currentScene = this;
     graphics = this.add.graphics();
     cursorKeys = this.input.keyboard.createCursorKeys();
     
@@ -54,8 +60,33 @@ function create() {
         });
     }
 
+    // Create HUD texts
+    scoreText = this.add.text(20, 20, '', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '10px',
+        color: '#33ff33'
+    });
+
+    fuelText = this.add.text(220, 20, '', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '10px',
+        color: '#33ff33'
+    });
+
+    levelLivesText = this.add.text(420, 20, '', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '10px',
+        color: '#33ff33'
+    });
+
+    speedText = this.add.text(620, 20, '', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '10px',
+        color: '#33ff33'
+    });
+
     resetLander();
-    generateNewLevel.call(this);
+    generateNewLevel(this);
 }
 
 function resetLander() {
@@ -70,7 +101,8 @@ function resetLander() {
     };
 }
 
-function generateNewLevel() {
+function generateNewLevel(scene) {
+    const activeScene = scene || currentScene || this;
     terrain = window.LanderCore.generateTerrain(800, 600, level);
 
     // Clear old pad texts to avoid duplicate game objects
@@ -78,9 +110,9 @@ function generateNewLevel() {
     padTexts = [];
 
     // Create landing pads text labels
-    if (this && this.add) {
+    if (activeScene && activeScene.add) {
         terrain.landingPads.forEach(pad => {
-            const txt = this.add.text((pad.x1 + pad.x2) / 2, pad.y - 18, `${pad.multiplier}X`, {
+            const txt = activeScene.add.text((pad.x1 + pad.x2) / 2, pad.y - 18, `${pad.multiplier}X`, {
                 fontFamily: '"Press Start 2P"',
                 fontSize: '8px',
                 color: '#33ff33'
@@ -138,8 +170,8 @@ function update(time, delta) {
     graphics.clear();
 
     // 1. Draw Starfield
-    graphics.lineStyle(1, 0xffffff, 0.5);
     stars.forEach(s => {
+        graphics.lineStyle(1, 0xffffff, s.alpha);
         graphics.strokePoint(s.x, s.y);
     });
 
@@ -179,5 +211,20 @@ function update(time, delta) {
 
         // Render ship
         drawVectorLander(graphics, landerState.x, landerState.y, landerState.angle, landerState.thrust);
+    }
+
+    // Update HUD Stats
+    if (scoreText) scoreText.setText(`SCORE: ${score}\nHIGH SCORE: ${highScore}`);
+    if (fuelText) fuelText.setText(`FUEL: ${landerState ? Math.round(landerState.fuel) : 0}`);
+    if (levelLivesText) levelLivesText.setText(`LEVEL: ${level}\nLIVES: ${lives}`);
+    if (speedText) {
+        if (landerState) {
+            const vx = landerState.vx;
+            const vy = landerState.vy;
+            const angle = landerState.angle;
+            speedText.setText(`H.SPEED: ${vx.toFixed(1)}\nV.SPEED: ${vy.toFixed(1)}\nANGLE: ${Math.round(angle)}`);
+        } else {
+            speedText.setText(`H.SPEED: 0.0\nV.SPEED: 0.0\nANGLE: 0`);
+        }
     }
 }
