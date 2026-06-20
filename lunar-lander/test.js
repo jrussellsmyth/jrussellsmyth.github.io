@@ -117,6 +117,27 @@ try {
     "game.js must instantiate SynthEngine as audio"
   );
 
+  // Custom Inputs & Mirrored Mobile Gutters checks (Task 6 verification)
+  console.log("Running Custom Inputs & Mirrored Mobile Gutters checks...");
+  assert.ok(htmlContent.includes('id="thrust-left"'), "HTML must contain thrust-left input");
+  assert.ok(htmlContent.includes('id="thrust-right"'), "HTML must contain thrust-right input");
+  assert.ok(htmlContent.includes('id="steer-left"'), "HTML must contain steer-left input");
+  assert.ok(htmlContent.includes('id="steer-right"'), "HTML must contain steer-right input");
+
+  // Assert default/min/max attributes
+  assert.ok(htmlContent.match(/id="thrust-left"[^>]*min="0"[^>]*max="100"[^>]*value="0"/), "thrust-left must have min=0, max=100, value=0");
+  assert.ok(htmlContent.match(/id="thrust-right"[^>]*min="0"[^>]*max="100"[^>]*value="0"/), "thrust-right must have min=0, max=100, value=0");
+  assert.ok(htmlContent.match(/id="steer-left"[^>]*min="-45"[^>]*max="45"[^>]*value="0"/), "steer-left must have min=-45, max=45, value=0");
+  assert.ok(htmlContent.match(/id="steer-right"[^>]*min="-45"[^>]*max="45"[^>]*value="0"/), "steer-right must have min=-45, max=45, value=0");
+
+  // Verify game.js contains wheel listener and slider sync/snapping logic
+  assert.ok(gameContent.includes("this.input.on('wheel'"), "game.js must listen to wheel events");
+  assert.ok(gameContent.includes("thrust-left"), "game.js must reference thrust-left slider");
+  assert.ok(gameContent.includes("thrust-right"), "game.js must reference thrust-right slider");
+  assert.ok(gameContent.includes("steer-left"), "game.js must reference steer-left slider");
+  assert.ok(gameContent.includes("steer-right"), "game.js must reference steer-right slider");
+  assert.ok(gameContent.includes("targetSteerAngle"), "game.js must use targetSteerAngle for smooth rotation");
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);

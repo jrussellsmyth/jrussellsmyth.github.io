@@ -184,6 +184,12 @@ function create() {
     currentScene = this;
     graphics = this.add.graphics();
     cursorKeys = this.input.keyboard.createCursorKeys();
+    this.wasd = this.input.keyboard.addKeys({
+        up: Phaser.Input.Keyboard.KeyCodes.W,
+        down: Phaser.Input.Keyboard.KeyCodes.S,
+        left: Phaser.Input.Keyboard.KeyCodes.A,
+        right: Phaser.Input.Keyboard.KeyCodes.D
+    });
     
     // Populate Vector Starfield
     for (let i = 0; i < 40; i++) {
@@ -238,6 +244,65 @@ function create() {
     window.addEventListener('touchstart', initAudioOnInteraction);
     window.addEventListener('click', initAudioOnInteraction);
     window.addEventListener('wheel', initAudioOnInteraction);
+
+    // Mouse Wheel listener for Desktop
+    this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+        // Scroll up increases throttle, scroll down decreases throttle
+        let currentThrust = landerState.thrust;
+        if (deltaY < 0) {
+            currentThrust = Math.min(1.0, currentThrust + 0.1);
+        } else {
+            currentThrust = Math.max(0.0, currentThrust - 0.1);
+        }
+        landerState.thrust = currentThrust;
+
+        // Update virtual visual sliders if they are displayed
+        const leftThrustSlider = document.getElementById('thrust-left');
+        const rightThrustSlider = document.getElementById('thrust-right');
+        if (leftThrustSlider) leftThrustSlider.value = currentThrust * 100;
+        if (rightThrustSlider) rightThrustSlider.value = currentThrust * 100;
+    });
+
+    // Touch Screen bindings for Mobile Sliders (Mirrored logic)
+    const leftThrustSlider = document.getElementById('thrust-left');
+    const rightThrustSlider = document.getElementById('thrust-right');
+    const leftSteerSlider = document.getElementById('steer-left');
+    const rightSteerSlider = document.getElementById('steer-right');
+
+    const syncThrust = (val) => {
+        audio.init(); // Initialize audio context on first interactive gesture
+        const level = val / 100;
+        landerState.thrust = level;
+        if (leftThrustSlider) leftThrustSlider.value = val;
+        if (rightThrustSlider) rightThrustSlider.value = val;
+    };
+
+    if (leftThrustSlider) leftThrustSlider.addEventListener('input', (e) => syncThrust(e.target.value));
+    if (rightThrustSlider) rightThrustSlider.addEventListener('input', (e) => syncThrust(e.target.value));
+
+    const syncSteer = (val) => {
+        audio.init();
+        // Steer value mapping
+        landerState.targetSteerAngle = parseFloat(val);
+        if (leftSteerSlider) leftSteerSlider.value = val;
+        if (rightSteerSlider) rightSteerSlider.value = val;
+    };
+
+    if (leftSteerSlider) leftSteerSlider.addEventListener('input', (e) => syncSteer(e.target.value));
+    if (rightSteerSlider) rightSteerSlider.addEventListener('input', (e) => syncSteer(e.target.value));
+    
+    // Snap slider back to center when released
+    const releaseSteer = () => {
+        syncSteer(0);
+    };
+    if (leftSteerSlider) {
+        leftSteerSlider.addEventListener('touchend', releaseSteer);
+        leftSteerSlider.addEventListener('mouseup', releaseSteer);
+    }
+    if (rightSteerSlider) {
+        rightSteerSlider.addEventListener('touchend', releaseSteer);
+        rightSteerSlider.addEventListener('mouseup', releaseSteer);
+    }
 }
 
 function resetLander() {
@@ -345,16 +410,36 @@ function update(time, delta) {
     if (lives > 0) {
         // Read desktop cursor inputs for testing vector logic
         let desiredThrust = landerState.thrust;
-        if (cursorKeys.up.isDown) {
+
+        // Check keyboard input for thrust (Arrow Up or W)
+        const isKeyboardThrusting = (cursorKeys.up && cursorKeys.up.isDown) || (this.wasd && this.wasd.up && this.wasd.up.isDown);
+        
+        if (isKeyboardThrusting) {
             desiredThrust = 1.0;
-        } else {
+            // Also update the slider UI values to sync when keyboard is held
+            const leftThrustSlider = document.getElementById('thrust-left');
+            const rightThrustSlider = document.getElementById('thrust-right');
+            if (leftThrustSlider) leftThrustSlider.value = 100;
+            if (rightThrustSlider) rightThrustSlider.value = 100;
+            this.wasKeyboardThrusting = true;
+        } else if (this.wasKeyboardThrusting) {
             desiredThrust = 0;
+            const leftThrustSlider = document.getElementById('thrust-left');
+            const rightThrustSlider = document.getElementById('thrust-right');
+            if (leftThrustSlider) leftThrustSlider.value = 0;
+            if (rightThrustSlider) rightThrustSlider.value = 0;
+            this.wasKeyboardThrusting = false;
         }
 
-        if (cursorKeys.left.isDown) {
+        // Steer angle blending (Keyboard arrow / WASD override touch steer slider)
+        if ((cursorKeys.left && cursorKeys.left.isDown) || (this.wasd && this.wasd.left && this.wasd.left.isDown)) {
             landerState.angle -= 90 * dt;
-        } else if (cursorKeys.right.isDown) {
+        } else if ((cursorKeys.right && cursorKeys.right.isDown) || (this.wasd && this.wasd.right && this.wasd.right.isDown)) {
             landerState.angle += 90 * dt;
+        } else if (landerState.targetSteerAngle !== undefined) {
+            // Smoothly rotate lander towards target touch angle
+            const diff = landerState.targetSteerAngle - landerState.angle;
+            landerState.angle += diff * 0.1;
         }
 
         landerState.thrust = desiredThrust;
