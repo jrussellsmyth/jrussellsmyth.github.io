@@ -66,7 +66,7 @@ class SynthEngine {
         this.startWarningAlarm();
     }
 
-    playExplosion(volumeFactor = 1.0) { // playExplosion()
+    playExplosion(volumeFactor = 1.0) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         
@@ -103,7 +103,7 @@ class SynthEngine {
         noiseNode.stop(now + 1.6);
     }
 
-    playSuccess(pitchFactor = 1.0) { // playSuccess()
+    playSuccess(pitchFactor = 1.0) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
@@ -923,8 +923,6 @@ function update(time, delta) {
                     
                     this.time.delayedCall(2000, () => {
                         level++;
-                        fuel = currentScene.nextLevelFuel !== undefined ? currentScene.nextLevelFuel : 1000;
-                        currentScene.nextLevelFuel = 1000; // Reset for next touchdown
                         resetLander();
                         generateNewLevel(currentScene);
                         setScreenState(STATE_PLAYING);

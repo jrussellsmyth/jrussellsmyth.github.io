@@ -109,8 +109,8 @@ try {
     'setThrust(',
     'playThrust(',
     'playLowFuelAlarm()',
-    'playExplosion()',
-    'playSuccess()',
+    'playExplosion',
+    'playSuccess',
     'startWarningAlarm()',
     'stopWarningAlarm()'
   ];
