@@ -164,6 +164,21 @@ let fuelText;
 let levelLivesText;
 let speedText;
 
+// Screen overlay texts
+let screenTitleText;
+let screenDetailText;
+let screenPromptText;
+
+// Game States
+const STATE_INTRO = 'INTRO';
+const STATE_PLAYING = 'PLAYING';
+const STATE_SUCCESS = 'SUCCESS';
+const STATE_CRASHED = 'CRASHED';
+const STATE_GAMEOVER = 'GAMEOVER';
+
+let gameState = STATE_INTRO;
+let debris = [];
+
 // Safe parameters
 let score = 0;
 let highScore = 0;
@@ -225,8 +240,46 @@ function create() {
         color: '#33ff33'
     });
 
+    // Title/Screen overlay texts
+    screenTitleText = this.add.text(400, 160, '', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '28px',
+        color: '#33ff33',
+        align: 'center'
+    }).setOrigin(0.5);
+
+    screenDetailText = this.add.text(400, 320, '', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '12px',
+        color: '#33ff33',
+        align: 'center',
+        lineSpacing: 12
+    }).setOrigin(0.5);
+
+    screenPromptText = this.add.text(400, 480, '', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '14px',
+        color: '#33ff33',
+        align: 'center'
+    }).setOrigin(0.5);
+
     resetLander();
     generateNewLevel(this);
+    setScreenState(STATE_INTRO);
+
+    // Keyboard space bar listener for screen transition
+    this.input.keyboard.on('keydown-SPACE', () => {
+        if (gameState === STATE_INTRO || gameState === STATE_GAMEOVER) {
+            startGame();
+        }
+    });
+
+    // Pointer click/tap listener for screen transition
+    this.input.on('pointerdown', () => {
+        if (gameState === STATE_INTRO || gameState === STATE_GAMEOVER) {
+            startGame();
+        }
+    });
 
     // Initialize audio on first user interaction gesture to unlock browser AudioContext autoplay policy
     const initAudioOnInteraction = () => {
@@ -247,7 +300,7 @@ function create() {
 
     // Mouse Wheel listener for Desktop
     this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
-        // Scroll up increases throttle, scroll down decreases throttle
+        if (gameState !== STATE_PLAYING) return;
         let currentThrust = landerState.thrust;
         if (deltaY < 0) {
             currentThrust = Math.min(1.0, currentThrust + 0.1);
@@ -271,8 +324,9 @@ function create() {
 
     const syncThrust = (val) => {
         audio.init(); // Initialize audio context on first interactive gesture
-        const level = val / 100;
-        landerState.thrust = level;
+        if (gameState !== STATE_PLAYING) return;
+        const levelVal = val / 100;
+        landerState.thrust = levelVal;
         if (leftThrustSlider) leftThrustSlider.value = val;
         if (rightThrustSlider) rightThrustSlider.value = val;
     };
@@ -282,6 +336,7 @@ function create() {
 
     const syncSteer = (val) => {
         audio.init();
+        if (gameState !== STATE_PLAYING) return;
         // Steer value mapping
         landerState.targetSteerAngle = parseFloat(val);
         if (leftSteerSlider) leftSteerSlider.value = val;
@@ -305,6 +360,87 @@ function create() {
     }
 }
 
+function startGame() {
+    score = 0;
+    lives = 3;
+    level = 1;
+    fuel = 1000;
+    resetLander();
+    generateNewLevel(currentScene);
+    setScreenState(STATE_PLAYING);
+    audio.init();
+}
+
+function setScreenState(newState) {
+    gameState = newState;
+    
+    screenTitleText.setText('');
+    screenDetailText.setText('');
+    screenPromptText.setText('');
+    
+    padTexts.forEach(txt => {
+        if (gameState === STATE_PLAYING) {
+            txt.setVisible(true);
+        } else {
+            txt.setVisible(false);
+        }
+    });
+
+    if (gameState === STATE_INTRO) {
+        screenTitleText.setText('LUNAR LANDER');
+        screenDetailText.setText(
+            'DESKTOP CONTROLS:\n' +
+            'W / UP ARROW    - THRUST\n' +
+            'A/D / L/R ARROW - STEER\n' +
+            'MOUSE WHEEL     - FINE THRUST\n\n' +
+            'MOBILE CONTROLS:\n' +
+            'USE ON-SCREEN SLIDERS\n\n' +
+            'MISSION:\n' +
+            'LAND SAFELY ON FLAT PADS'
+        );
+        screenPromptText.setText('PRESS SPACE OR CLICK TO START');
+        
+        if (landerState) {
+            landerState.thrust = 0;
+        }
+        audio.setThrust(0);
+        audio.stopWarningAlarm();
+    } else if (gameState === STATE_PLAYING) {
+        // Active gameplay
+    } else if (gameState === STATE_SUCCESS) {
+        screenTitleText.setText('SAFE LANDING!');
+        screenPromptText.setText('NEXT LEVEL STARTING...');
+    } else if (gameState === STATE_CRASHED) {
+        screenTitleText.setText('CRASHED!');
+        screenPromptText.setText(lives > 0 ? 'RESETTING LANDER...' : '');
+    } else if (gameState === STATE_GAMEOVER) {
+        screenTitleText.setText('GAME OVER');
+        screenDetailText.setText(`FINAL SCORE: ${score}\n\nLEVEL REACHED: ${level}`);
+        screenPromptText.setText('PRESS SPACE OR CLICK TO REPLAY');
+        
+        if (score > highScore) {
+            highScore = score;
+            try {
+                localStorage.setItem('lander_high_score', highScore.toString());
+            } catch (e) {}
+        }
+    }
+}
+
+function syncSlidersToLander() {
+    const leftThrustSlider = document.getElementById('thrust-left');
+    const rightThrustSlider = document.getElementById('thrust-right');
+    const leftSteerSlider = document.getElementById('steer-left');
+    const rightSteerSlider = document.getElementById('steer-right');
+
+    const thrustVal = landerState ? landerState.thrust * 100 : 0;
+    if (leftThrustSlider) leftThrustSlider.value = thrustVal;
+    if (rightThrustSlider) rightThrustSlider.value = thrustVal;
+    if (leftSteerSlider) leftSteerSlider.value = 0;
+    if (rightSteerSlider) rightSteerSlider.value = 0;
+    if (landerState) landerState.targetSteerAngle = 0;
+}
+
 function resetLander() {
     landerState = {
         x: 400,
@@ -315,6 +451,7 @@ function resetLander() {
         fuel: fuel,
         thrust: 0
     };
+    syncSlidersToLander();
 }
 
 function generateNewLevel(scene) {
@@ -334,8 +471,88 @@ function generateNewLevel(scene) {
                 color: '#33ff33'
             }).setOrigin(0.5).setAlpha(0.7);
             padTexts.push(txt);
+            if (gameState !== STATE_PLAYING) {
+                txt.setVisible(false);
+            }
         });
     }
+}
+
+function triggerExplosion() {
+    audio.playExplosion();
+    debris = [];
+    
+    const rad = (landerState.angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    // List of local segments relative to the lander's center
+    const localSegments = [
+        // Body Capsule
+        { x1: -10, y1: -5, x2: 10, y2: -5 },
+        { x1: 10, y1: -5, x2: 12, y2: 5 },
+        { x1: 12, y1: 5, x2: -12, y2: 5 },
+        { x1: -12, y1: 5, x2: -10, y2: -5 },
+        // Legs
+        { x1: -12, y1: 5, x2: -16, y2: 15 },
+        { x1: 12, y1: 5, x2: 16, y2: 15 },
+        // Footpads
+        { x1: -18, y1: 15, x2: -14, y2: 15 },
+        { x1: 14, y1: 15, x2: 18, y2: 15 },
+        // Engine Nozzle
+        { x1: -4, y1: 5, x2: -2, y2: 9 },
+        { x1: 4, y1: 5, x2: 2, y2: 9 },
+        { x1: -2, y1: 9, x2: 2, y2: 9 }
+    ];
+
+    localSegments.forEach(seg => {
+        // Rotate local endpoints to world space (relative to lander center)
+        const wx1 = seg.x1 * cos - seg.y1 * sin;
+        const wy1 = seg.x1 * sin + seg.y1 * cos;
+        const wx2 = seg.x2 * cos - seg.y2 * sin;
+        const wy2 = seg.x2 * sin + seg.y2 * cos;
+
+        // Calculate center of this segment in world space
+        const cx = landerState.x + (wx1 + wx2) / 2;
+        const cy = landerState.y + (wy1 + wy2) / 2;
+
+        const dx = wx2 - wx1;
+        const dy = wy2 - wy1;
+
+        debris.push({
+            x: cx,
+            y: cy,
+            vx: landerState.vx + (Math.random() - 0.5) * 60,
+            vy: landerState.vy - Math.random() * 20 - 15,
+            angle: landerState.angle,
+            vAngle: (Math.random() - 0.5) * 360,
+            lx1: -dx / 2,
+            ly1: -dy / 2,
+            lx2: dx / 2,
+            ly2: dy / 2
+        });
+    });
+}
+
+function updateAndDrawDebris(g, dt) {
+    g.lineStyle(2, 0x33ff33, 1);
+    const gravity = 25.0;
+    
+    debris.forEach(d => {
+        d.vy += gravity * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        d.angle += d.vAngle * dt;
+
+        g.save();
+        g.translateCanvas(d.x, d.y);
+        g.rotateCanvas((d.angle * Math.PI) / 180);
+        g.beginPath();
+        g.moveTo(d.lx1, d.ly1);
+        g.lineTo(d.lx2, d.ly2);
+        g.strokePath();
+        g.restore();
+    });
 }
 
 function drawVectorLander(g, x, y, angle, thrust) {
@@ -392,22 +609,24 @@ function update(time, delta) {
     });
 
     // 2. Draw Vector Terrain
-    graphics.lineStyle(2, 0x33ff33, 1);
-    graphics.beginPath();
-    graphics.moveTo(terrain.points[0].x, terrain.points[0].y);
-    for (let i = 1; i < terrain.points.length; i++) {
-        graphics.lineTo(terrain.points[i].x, terrain.points[i].y);
-    }
-    graphics.strokePath();
+    if (terrain) {
+        graphics.lineStyle(2, 0x33ff33, 1);
+        graphics.beginPath();
+        graphics.moveTo(terrain.points[0].x, terrain.points[0].y);
+        for (let i = 1; i < terrain.points.length; i++) {
+            graphics.lineTo(terrain.points[i].x, terrain.points[i].y);
+        }
+        graphics.strokePath();
 
-    // Draw Landing Pads Multipliers
-    terrain.landingPads.forEach(pad => {
-        graphics.lineStyle(3, 0x33ff33, 1);
-        graphics.lineBetween(pad.x1, pad.y, pad.x2, pad.y);
-    });
+        // Draw Landing Pads Multipliers
+        terrain.landingPads.forEach(pad => {
+            graphics.lineStyle(3, 0x33ff33, 1);
+            graphics.lineBetween(pad.x1, pad.y, pad.x2, pad.y);
+        });
+    }
 
     // 3. Game Flight State Physics Update
-    if (lives > 0) {
+    if (gameState === STATE_PLAYING) {
         // Read desktop cursor inputs for testing vector logic
         let desiredThrust = landerState.thrust;
 
@@ -452,8 +671,103 @@ function update(time, delta) {
             audio.stopWarningAlarm();
         }
 
-        // Render ship
-        drawVectorLander(graphics, landerState.x, landerState.y, landerState.angle, landerState.thrust);
+        // Check for collision
+        const collision = window.LanderCore.checkCollision(landerState, terrain);
+        if (collision.collided) {
+            // Find matching landing pad
+            const pad = terrain.landingPads.find(p => landerState.x >= p.x1 && landerState.x <= p.x2);
+            if (pad) {
+                const check = window.LanderCore.checkLandingCondition(landerState.vx, landerState.vy, landerState.angle);
+                if (check.success) {
+                    // Safe Landing
+                    audio.setThrust(0);
+                    audio.stopWarningAlarm();
+                    audio.playSuccess();
+                    
+                    const landingScore = Math.round(pad.multiplier * landerState.fuel);
+                    score += landingScore;
+                    if (score > highScore) {
+                        highScore = score;
+                    }
+                    
+                    setScreenState(STATE_SUCCESS);
+                    screenDetailText.setText(
+                        `SAFE LANDING!\n\n` +
+                        `PAD MULTIPLIER: ${pad.multiplier}X\n` +
+                        `REMAINING FUEL: ${Math.round(landerState.fuel)}\n` +
+                        `POINTS AWARDED : ${landingScore}`
+                    );
+                    
+                    this.time.delayedCall(2000, () => {
+                        level++;
+                        fuel = 1000; // Replenish fuel
+                        resetLander();
+                        generateNewLevel(currentScene);
+                        setScreenState(STATE_PLAYING);
+                    });
+                } else {
+                    // Failed Landing Conditions on Pad
+                    audio.setThrust(0);
+                    audio.stopWarningAlarm();
+                    triggerExplosion();
+                    lives--;
+                    
+                    setScreenState(STATE_CRASHED);
+                    let reasonText = 'CRASHED ON PAD!\n\n';
+                    if (check.reason === 'speed') {
+                        reasonText += `SPEED TOO HIGH!\n` +
+                            `H.SPEED: ${landerState.vx.toFixed(1)} (MAX 15.0)\n` +
+                            `V.SPEED: ${landerState.vy.toFixed(1)} (MAX 30.0)`;
+                    } else if (check.reason === 'angle') {
+                        reasonText += `ANGLE TOO CROOKED!\n` +
+                            `ANGLE: ${Math.round(landerState.angle)} DEG (MAX 5)`;
+                    }
+                    screenDetailText.setText(reasonText);
+                    
+                    this.time.delayedCall(2000, () => {
+                        if (lives > 0) {
+                            fuel = 1000; // Reset/replenish fuel
+                            resetLander();
+                            setScreenState(STATE_PLAYING);
+                        } else {
+                            setScreenState(STATE_GAMEOVER);
+                        }
+                    });
+                }
+            } else {
+                // Crashed on general terrain
+                audio.setThrust(0);
+                audio.stopWarningAlarm();
+                triggerExplosion();
+                lives--;
+                
+                setScreenState(STATE_CRASHED);
+                screenDetailText.setText('CRASHED ON TERRAIN!\n\nMUST LAND ON FLAT PADS.');
+                
+                this.time.delayedCall(2000, () => {
+                    if (lives > 0) {
+                        fuel = 1000; // Reset/replenish fuel
+                        resetLander();
+                        setScreenState(STATE_PLAYING);
+                    } else {
+                        setScreenState(STATE_GAMEOVER);
+                    }
+                });
+            }
+        }
+
+        if (gameState === STATE_PLAYING) {
+            drawVectorLander(graphics, landerState.x, landerState.y, landerState.angle, landerState.thrust);
+        }
+    } else if (gameState === STATE_SUCCESS) {
+        audio.setThrust(0);
+        audio.stopWarningAlarm();
+        // Keep ship drawn frozen at its landed spot
+        drawVectorLander(graphics, landerState.x, landerState.y, landerState.angle, 0);
+    } else if (gameState === STATE_CRASHED) {
+        audio.setThrust(0);
+        audio.stopWarningAlarm();
+        updateAndDrawDebris(graphics, dt);
     } else {
         audio.setThrust(0);
         audio.stopWarningAlarm();

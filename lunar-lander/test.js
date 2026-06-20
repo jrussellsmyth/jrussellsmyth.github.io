@@ -138,6 +138,46 @@ try {
   assert.ok(gameContent.includes("steer-right"), "game.js must reference steer-right slider");
   assert.ok(gameContent.includes("targetSteerAngle"), "game.js must use targetSteerAngle for smooth rotation");
 
+  // Test collision detection logic
+  console.log("Running Collision Detection tests...");
+  assert.strictEqual(typeof Core.getTerrainHeight, 'function');
+  assert.strictEqual(typeof Core.checkCollision, 'function');
+
+  const mockTerrain = {
+    points: [
+      { x: 0, y: 500 },
+      { x: 400, y: 400 },
+      { x: 800, y: 500 }
+    ],
+    landingPads: [
+      { x1: 300, x2: 500, y: 400, multiplier: 5 }
+    ]
+  };
+
+  // Check terrain height calculations
+  assert.strictEqual(Core.getTerrainHeight(mockTerrain, 0), 500);
+  assert.strictEqual(Core.getTerrainHeight(mockTerrain, 200), 450);
+  assert.strictEqual(Core.getTerrainHeight(mockTerrain, 400), 400);
+  assert.strictEqual(Core.getTerrainHeight(mockTerrain, 600), 450);
+  assert.strictEqual(Core.getTerrainHeight(mockTerrain, 800), 500);
+
+  // Check collision results
+  // Lander safe in air
+  const airState = { x: 400, y: 100, vx: 0, vy: 10, angle: 0 };
+  assert.deepStrictEqual(Core.checkCollision(airState, mockTerrain), { collided: false });
+
+  // Lander colliding with terrain (left foot)
+  const crashLeftState = { x: 384, y: 390, vx: 0, vy: 10, angle: 0 }; // left foot local lx=-16, ly=15 -> rx=368, ry=405. Terrain at 368 is 500 - 0.25*100 = 408 (Wait, 368/400 = 0.92, so 500 - 0.92 * 100 = 408). Wait, ry = 405 is less than terrainY = 408.
+  // Wait, let's make sure the coordinate check is simple. If we put it at y: 395, left foot is at ry = 410, terrain at 384 is 404 (384/400 = 0.96, so 500 - 0.96 * 100 = 404). ry=410 > terrainY=404 -> collided.
+  const crashState = { x: 400, y: 395, vx: 0, vy: 10, angle: 0 }; // feet are at y+15 = 410, terrain is at 400
+  const collisionResult = Core.checkCollision(crashState, mockTerrain);
+  assert.strictEqual(collisionResult.collided, true);
+  assert.ok(collisionResult.collisionY >= 400);
+
+  // Lander out of bounds
+  const oobState = { x: -10, y: 100, vx: 0, vy: 10, angle: 0 };
+  assert.strictEqual(Core.checkCollision(oobState, mockTerrain).collided, true);
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);

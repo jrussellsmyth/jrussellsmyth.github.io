@@ -151,9 +151,64 @@ function generateTerrain(width, height, count, difficulty) {
   return { points, landingPads };
 }
 
+function getTerrainHeight(terrain, x) {
+  if (!terrain || !terrain.points || terrain.points.length === 0) return 600;
+  if (x <= 0) return terrain.points[0].y;
+  if (x >= 800) {
+    return terrain.points[terrain.points.length - 1].y;
+  }
+  
+  const segments = terrain.points.length - 1;
+  const width = terrain.points[segments].x;
+  const dx = width / segments;
+  
+  const index = Math.floor(x / dx);
+  if (index < 0 || index >= segments) {
+    return 600;
+  }
+  
+  const p1 = terrain.points[index];
+  const p2 = terrain.points[index + 1];
+  
+  if (!p1 || !p2) return 600;
+  
+  const t = (x - p1.x) / (p2.x - p1.x);
+  return p1.y + t * (p2.y - p1.y);
+}
+
+function checkCollision(landerState, terrain) {
+  if (landerState.x < 0 || landerState.x > 800 || landerState.y > 600) {
+    return { collided: true, collisionX: landerState.x, collisionY: Math.min(landerState.y, 600) };
+  }
+
+  const rad = (landerState.angle * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+
+  const checkPoints = [
+    { lx: -16, ly: 15 },
+    { lx: 16, ly: 15 },
+    { lx: 0, ly: 9 }
+  ];
+
+  for (let pt of checkPoints) {
+    const rx = landerState.x + pt.lx * cos - pt.ly * sin;
+    const ry = landerState.y + pt.lx * sin + pt.ly * cos;
+    
+    const terrainY = getTerrainHeight(terrain, rx);
+    if (ry >= terrainY) {
+      return { collided: true, collisionX: rx, collisionY: ry };
+    }
+  }
+
+  return { collided: false };
+}
+
 module.exports = {
   checkLandingCondition,
   updatePhysicsState,
   calculateLandingMultiplier,
-  generateTerrain
+  generateTerrain,
+  getTerrainHeight,
+  checkCollision
 };
