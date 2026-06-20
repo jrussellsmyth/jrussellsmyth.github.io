@@ -1,53 +1,57 @@
-# Task 2 Report: Page Skeleton, Responsive Styling, and CRT Glow Setup
+# Task 2 Report: Camera Scrolling with 15% Screen Margins
 
-## What was Implemented
-1. **HTML Canvas Scaffolding (`lunar-lander/index.html`):**
-   - Setup `<div id="game-wrapper">` containing the left gutter, the main game container `#game-container`, and the right gutter.
-   - Built dual-thrust and steer layout for touchscreen/landscape inputs (vertical slider for Thrust, horizontal slider for Steer) in left and right gutters to support mirroring or customized controls.
-   - Linked Google Font `Press Start 2P`, the external stylesheet, and imported Phaser 3.80.1 CDN along with the bridged `lander-core.js`.
-2. **Neon CRT Vector Styles (`lunar-lander/style.css`):**
-   - Configured custom canvas drop-shadow neon glow filter (`drop-shadow(0 0 3px #00ff00)`).
-   - Created a dynamic CRT overlay effect via a CSS pseudo-element `::after` on `#game-container` combining a vertical/horizontal scanline linear-gradient mask to replicate retro 1970s monitors.
-   - Responsive breakpoints: Hide control sidebars (gutters) on desktop (standard keyboard control mode) and dynamically display them on touch-enabled/mobile platforms using the media query `@media (pointer: coarse)`.
-   - Micro-animations: Added interactive scaling hover states and enhanced green glow transitions to the slider-thumbs (`.slider::-webkit-slider-thumb`) to create a premium interactive UX.
-3. **Integration Assertions (`lunar-lander/test.js`):**
-   - Integrated check rules verifying that files `index.html` and `style.css` exist.
-   - Wrote automated string-matching tests asserting that critical ID nodes (`#game-wrapper`, `#game-container`), control box sidebars (`.gutter`), link references, and CRT gradient/glow style rules exist inside the source files.
+## Implementation Details
 
-## What was Tested and Test Results
-- Run unit and structural test suite locally:
-  `node lunar-lander/test.js`
-- **Output:**
-  ```
-  Running Core logic tests...
-  Running HTML/CSS structure checks...
-  ALL TESTS PASSED!
-  ```
-- Checked correct syntax, bindings, and references inside HTML and CSS files.
+I implemented horizontal camera scroll tracking with 15% screen margins wrapping at 4000px, and updated the terrain generator call to 4000px width.
+
+### Key Changes:
+1. **Dynamic Camera Scrolling**: Calculated dynamic scrolling boundaries inside `update` in `game.js` based on `zoom`, `W_world` (800 / zoom), and `M_world` (120 / zoom).
+2. **Horizontal Wrapping & Pinning Bug Fix**:
+   - Wrapped `screenX_world` to `[-2000, 2000]` in a 4000px world to prevent the lander from getting pinned at the left screen margin when crossing the wrapping boundary.
+   - Wrapped `this.cameras.main.scrollX` to the interval `[0, 4000]`.
+3. **Terrain Vector Double-Draw**: Multiplied the terrain drawing logic with horizontal offsets of `[-4000, 0, 4000]` so it seamlessly covers camera view wrap-around.
+4. **Landing Pad Text Labels Wrapping**:
+   - Stored the original `baseX` of pad text labels.
+   - Dynamically updated their `x` coordinate relative to the camera scroll, wrapping them in `[-2000, 2000]` around `4000px` to make sure they display at the correct wrapped position on screen.
+5. **HUD Fix**:
+   - Called `setScrollFactor(0)` on `scoreText`, `fuelText`, `levelLivesText`, `speedText`, `screenTitleText`, `screenDetailText`, and `screenPromptText` so they stay fixed in the camera viewport.
+6. **Lander Wrap & Debris Wrap**:
+   - Updated the lander double-draw wrap width from `800` to `4000`.
+   - Updated debris to wrap horizontally at `4000` and double-draw if crossing wrapping boundaries.
+7. **Starfield Expansion**:
+   - Expanded stars generation width from `800` to `4000` and increased density to 200 stars to cover the full width.
+
+## Verification & Test Results
+
+### Automated Tests
+I added a new test suite specifically verifying the camera scroll tracking math, screen boundaries (15% margins), and wrapping behavior in `test.js`.
+
+Command run:
+```bash
+node lunar-lander/test.js
+```
+
+Output:
+```
+Running Core logic tests...
+Running HTML/CSS structure checks...
+Running Terrain generator tests...
+Running Phaser Vector Rendering Engine checks...
+Running Web Audio Synth checks...
+Running Custom Inputs & Mirrored Mobile Gutters checks...
+Running Collision Detection tests...
+Running Touchdown Quality & Dynamic Wrapping tests...
+Running Camera scroll tracking & wrapping tests...
+ALL TESTS PASSED!
+```
 
 ## Files Changed
-- **`lunar-lander/index.html`** (Created / scaffolded structure)
-- **`lunar-lander/style.css`** (Created / added style rules and CRT filter overlays)
-- **`lunar-lander/test.js`** (Modified / added visual integration and structural assertions)
+
+- [lunar-lander/game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js)
+- [lunar-lander/test.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js)
 
 ## Self-Review Findings
-- The HTML boilerplate appropriately handles local and global imports.
-- The `pointer: coarse` query correctly shows the mobile control gutters only on touchscreen devices.
-- The CRT scanline overlay has `pointer-events: none` enabled so it does not intercept user clicks or drag interactions with the canvas underneath.
-- Extra aesthetic enhancements (hover glow/scale animations on slider-thumbs) improve tactile feedback without breaking layout constraints.
 
-## Issues or Concerns
-- None. Everything is clean and green.
-
-## Task 2 Review Fixes
-
-### What was Fixed
-1. **CRT Glow Selector:** Moved the `#game-container` glow filter to `#game-container canvas` and added `background: transparent;` to ensure the vector glow is not blocked by an opaque container.
-2. **Firefox Vertical Slider:** Replaced the non-standard `writing-mode: bt-lr;` with the standard `writing-mode: vertical-lr; direction: rtl;` on `.vertical-slider`.
-3. **Webkit Custom Thumb Style Override:** Switched `.vertical-slider` to use `-webkit-appearance: none; appearance: none;` combined with the standard vertical writing-mode, ensuring custom styling applies to the slider thumb on Chrome/Safari.
-4. **Firefox Custom Thumb:** Duplicated the custom range-thumb styles for `.slider::-moz-range-thumb` (with a `border: none;` reset) to support Firefox.
-
-### Verification & Testing
-- **Command:** `node lunar-lander/test.js`
-- **Output/Status:** The command was proposed but timed out waiting for user permission (non-interactive session). The structural and syntax updates have been manually verified to match the reviewer's instructions.
-
+- **Completeness**: All items in the spec have been fully implemented and verified.
+- **Quality**: The math for wrapping `screenX_world` and `txt.x` handles crossing boundaries seamlessly, avoiding standard wrapping bugs (e.g. ship getting stuck at the edge).
+- **Testing**: Added rigorous unit tests in `test.js` covering margins, left/right scrolling, and wrap crossings in both directions.
