@@ -305,6 +305,22 @@ function create() {
     // Initialize audio on first user interaction gesture to unlock browser AudioContext autoplay policy
     const initAudioOnInteraction = () => {
         audio.init();
+        
+        // Request fullscreen on mobile/touch devices to hide address bar
+        try {
+            const isMobile = window.matchMedia('(pointer: coarse)').matches;
+            if (isMobile) {
+                const fsEl = document.documentElement;
+                if (fsEl.requestFullscreen) {
+                    fsEl.requestFullscreen();
+                } else if (fsEl.webkitRequestFullscreen) {
+                    fsEl.webkitRequestFullscreen();
+                }
+            }
+        } catch (e) {
+            console.warn("Fullscreen request failed:", e);
+        }
+
         window.removeEventListener('keydown', initAudioOnInteraction);
         window.removeEventListener('pointerdown', initAudioOnInteraction);
         window.removeEventListener('mousedown', initAudioOnInteraction);
@@ -395,6 +411,21 @@ function startGame() {
     generateNewLevel(currentScene);
     setScreenState(STATE_PLAYING);
     audio.init();
+
+    // Request fullscreen on mobile/touch devices to hide address bar
+    try {
+        const isMobile = window.matchMedia('(pointer: coarse)').matches;
+        if (isMobile) {
+            const fsEl = document.documentElement;
+            if (fsEl.requestFullscreen) {
+                fsEl.requestFullscreen();
+            } else if (fsEl.webkitRequestFullscreen) {
+                fsEl.webkitRequestFullscreen();
+            }
+        }
+    } catch (e) {
+        console.warn("Fullscreen request failed:", e);
+    }
 }
 
 function setScreenState(newState) {
