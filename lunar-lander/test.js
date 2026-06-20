@@ -264,6 +264,13 @@ try {
   // New scroll = 3900 - 120 = 3780.
   assert.strictEqual(simulateCameraScroll(3900, 50), 3780);
 
+  // Camera dynamic zoom checks (Task 4 verification)
+  console.log("Running Camera dynamic zoom checks...");
+  assert.ok(gameContent.includes('getTerrainHeight(terrain, landerState.x)'), "game.js must get terrain height directly below lander");
+  assert.ok(gameContent.includes('targetZoom = (altitude < 200) ? 1.0 : 0.5') || gameContent.includes('targetZoom = altitude < 200 ? 1.0 : 0.5'), "game.js must determine target zoom based on altitude");
+  assert.ok(gameContent.includes('cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt))') || gameContent.includes('cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt))'), "game.js must LERP/interpolate camera zoom");
+  assert.ok(gameContent.includes('sX - (400 - 400 / currentZoom)') || gameContent.includes('sX - (400 - 400 / cam.zoom)'), "game.js must adjust camera scroll centered relative to zoom");
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);

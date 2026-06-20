@@ -822,25 +822,43 @@ function update(time, delta) {
         landerState.thrust = desiredThrust;
         landerState = window.LanderCore.updatePhysicsState(landerState, dt);
 
+        // Calculate distance to the terrain directly below the lander
+        const terrainY = window.LanderCore.getTerrainHeight(terrain, landerState.x);
+        const altitude = terrainY - landerState.y;
+        
+        // Determine target zoom level
+        const targetZoom = (altitude < 200) ? 1.0 : 0.5;
+        
+        // Exponential smoothing interpolation
+        const cam = this.cameras.main;
+        cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt));
+
         // Adjust scroll margins dynamically based on current zoom scale
-        const currentZoom = this.cameras.main.zoom;
+        const currentZoom = cam.zoom;
         const W_world = 800 / currentZoom;
         const M_world = 120 / currentZoom;
         
-        let screenX_world = landerState.x - this.cameras.main.scrollX;
+        // Find the left visible boundary in world space
+        const leftVisibleEdge = cam.scrollX + (400 - 400 / currentZoom);
+        
+        let screenX_world = landerState.x - leftVisibleEdge;
         // Wrap screenX_world to [-2000, 2000] to handle the 4000px wrap boundary
         screenX_world = ((screenX_world + 2000) % 4000 + 4000) % 4000 - 2000;
         
+        let targetLeftEdge = leftVisibleEdge;
         if (screenX_world > W_world - M_world) {
-            this.cameras.main.scrollX = landerState.x - (W_world - M_world);
+            targetLeftEdge = landerState.x - (W_world - M_world);
         } else if (screenX_world < M_world) {
-            this.cameras.main.scrollX = landerState.x - M_world;
+            targetLeftEdge = landerState.x - M_world;
         }
         
         // Wrap camera scroll X at [0, 4000]
-        let sX = this.cameras.main.scrollX % 4000;
+        let sX = targetLeftEdge % 4000;
         if (sX < 0) sX += 4000;
-        this.cameras.main.scrollX = sX;
+        
+        // Focus camera scroll center on the lander craft
+        // Phaser camera scroll matches scrollX, scrollY. Adjust so scroll is centered relative to zoom.
+        cam.scrollX = sX - (400 - 400 / currentZoom);
 
         audio.setThrust(landerState.thrust);
         if (landerState.fuel < 200 && landerState.fuel > 0) {
