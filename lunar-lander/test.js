@@ -201,6 +201,60 @@ try {
   const failLanding = Core.checkLandingCondition(18, 35, 8);
   assert.strictEqual(failLanding.success, false);
 
+  // Camera scroll tracking and wrapping simulation tests
+  console.log("Running Camera scroll tracking & wrapping tests...");
+  function simulateCameraScroll(landerX, currentScrollX, currentZoom = 1.0, worldWidth = 4000) {
+    const W_world = 800 / currentZoom;
+    const M_world = 120 / currentZoom;
+    
+    let screenX_world = landerX - currentScrollX;
+    // Wrap screenX_world to [-worldWidth/2, worldWidth/2]
+    const halfWidth = worldWidth / 2;
+    screenX_world = ((screenX_world + halfWidth) % worldWidth + worldWidth) % worldWidth - halfWidth;
+    
+    let newScrollX = currentScrollX;
+    if (screenX_world > W_world - M_world) {
+        newScrollX = landerX - (W_world - M_world);
+    } else if (screenX_world < M_world) {
+        newScrollX = landerX - M_world;
+    }
+    
+    let sX = newScrollX % worldWidth;
+    if (sX < 0) sX += worldWidth;
+    return sX;
+  }
+
+  // Test cases:
+  // 1. Initial state (Lander at 400, Camera at 0) - should not scroll because 400 is between 120 and 680.
+  assert.strictEqual(simulateCameraScroll(400, 0), 0);
+
+  // 2. Lander moves past right margin (e.g. to 700, Camera at 0) - camera should scroll right.
+  // Right margin is 800 - 120 = 680.
+  // New scroll should be landerX - (W_world - M_world) = 700 - 680 = 20.
+  assert.strictEqual(simulateCameraScroll(700, 0), 20);
+
+  // 3. Lander moves past left margin (e.g. to 100, Camera at 20) - camera should scroll left.
+  // Left margin is 120. Screen position is 100 - 20 = 80 < 120.
+  // New scroll should be landerX - M_world = 100 - 120 = -20 (wraps to 3980).
+  assert.strictEqual(simulateCameraScroll(100, 20), 3980);
+
+  // 4. Wrap crossing: Lander at 10 (wrapped), Camera at 3330.
+  // screenX_world = 10 - 3330 = -3320. Wrapped: (( -3320 + 2000 ) % 4000 ) = -1320 + 4000 - 2000 = 680.
+  // This is exactly on the right margin. Let's move Lander to 20 (wrapped).
+  // screenX_world = 20 - 3330 = -3310 -> wrapped to 690 > 680 (right margin).
+  // New scroll = 20 - 680 = -660 -> wraps to 3340.
+  assert.strictEqual(simulateCameraScroll(20, 3330), 3340);
+
+  // 5. Wrap crossing: Lander moving right past wrap boundary. Lander at 100 (wrapped), Camera at 3330.
+  // Screen relative position should be 100 - (3330 - 4000) = 770 > 680 (right margin).
+  // New scroll = 100 - 680 = -580 -> wraps to 3420.
+  assert.strictEqual(simulateCameraScroll(100, 3330), 3420);
+
+  // 6. Wrap crossing: Lander moving left past wrap boundary. Lander at 3900, Camera at 50.
+  // screenX_world = 3900 - 50 = 3850 -> wrapped to -150 < 120 (left margin).
+  // New scroll = 3900 - 120 = 3780.
+  assert.strictEqual(simulateCameraScroll(3900, 50), 3780);
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);

@@ -233,9 +233,9 @@ function create() {
     });
     
     // Populate Vector Starfield
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 200; i++) {
         stars.push({
-            x: Math.random() * 800,
+            x: Math.random() * 4000,
             y: Math.random() * 450,
             alpha: Math.random()
         });
@@ -246,25 +246,25 @@ function create() {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    });
+    }).setScrollFactor(0);
 
     fuelText = this.add.text(220, 20, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    });
+    }).setScrollFactor(0);
 
     levelLivesText = this.add.text(420, 20, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    });
+    }).setScrollFactor(0);
 
     speedText = this.add.text(620, 20, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    });
+    }).setScrollFactor(0);
 
     // Title/Screen overlay texts
     screenTitleText = this.add.text(400, 160, '', {
@@ -272,7 +272,7 @@ function create() {
         fontSize: '28px',
         color: '#33ff33',
         align: 'center'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
 
     screenDetailText = this.add.text(400, 320, '', {
         fontFamily: '"Press Start 2P"',
@@ -280,14 +280,14 @@ function create() {
         color: '#33ff33',
         align: 'center',
         lineSpacing: 12
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
 
     screenPromptText = this.add.text(400, 480, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '14px',
         color: '#33ff33',
         align: 'center'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
 
     resetLander();
     generateNewLevel(this);
@@ -587,12 +587,15 @@ function resetLander() {
         targetSteerRate: 0,
         targetSteerAngle: 0
     };
+    if (currentScene && currentScene.cameras && currentScene.cameras.main) {
+        currentScene.cameras.main.scrollX = 0;
+    }
     syncSlidersToLander();
 }
 
 function generateNewLevel(scene) {
     const activeScene = scene || currentScene || this;
-    terrain = window.LanderCore.generateTerrain(800, 600, level);
+    terrain = window.LanderCore.generateTerrain(4000, 600, 12, 1.0);
 
     // Clear old pad texts to avoid duplicate game objects
     padTexts.forEach(txt => txt.destroy());
@@ -601,11 +604,13 @@ function generateNewLevel(scene) {
     // Create landing pads text labels
     if (activeScene && activeScene.add) {
         terrain.landingPads.forEach(pad => {
-            const txt = activeScene.add.text((pad.x1 + pad.x2) / 2, pad.y - 18, `${pad.multiplier}X`, {
+            const baseX = (pad.x1 + pad.x2) / 2;
+            const txt = activeScene.add.text(baseX, pad.y - 18, `${pad.multiplier}X`, {
                 fontFamily: '"Press Start 2P"',
                 fontSize: '8px',
                 color: '#33ff33'
             }).setOrigin(0.5).setAlpha(0.7);
+            txt.baseX = baseX;
             padTexts.push(txt);
             if (gameState !== STATE_PLAYING) {
                 txt.setVisible(false);
@@ -680,6 +685,9 @@ function updateAndDrawDebris(g, dt) {
         d.y += d.vy * dt;
         d.angle += d.vAngle * dt;
 
+        // Wrap debris horizontally at 4000
+        d.x = (d.x % 4000 + 4000) % 4000;
+
         const rad = (d.angle * Math.PI) / 180;
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);
@@ -690,6 +698,13 @@ function updateAndDrawDebris(g, dt) {
         const y2 = d.y + d.lx2 * sin + d.ly2 * cos;
 
         g.lineBetween(x1, y1, x2, y2);
+
+        // Double-draw debris if near horizontal wrapping borders
+        if (d.x < 40) {
+            g.lineBetween(x1 + 4000, y1, x2 + 4000, y2);
+        } else if (d.x > 3960) {
+            g.lineBetween(x1 - 4000, y1, x2 - 4000, y2);
+        }
     });
 }
 
@@ -742,18 +757,21 @@ function update(time, delta) {
 
     // 2. Draw Vector Terrain
     if (terrain) {
-        graphics.lineStyle(2, 0x33ff33, 1);
-        graphics.beginPath();
-        graphics.moveTo(terrain.points[0].x, terrain.points[0].y);
-        for (let i = 1; i < terrain.points.length; i++) {
-            graphics.lineTo(terrain.points[i].x, terrain.points[i].y);
-        }
-        graphics.strokePath();
+        const offsets = [0, 4000, -4000];
+        offsets.forEach(offset => {
+            graphics.lineStyle(2, 0x33ff33, 1);
+            graphics.beginPath();
+            graphics.moveTo(terrain.points[0].x + offset, terrain.points[0].y);
+            for (let i = 1; i < terrain.points.length; i++) {
+                graphics.lineTo(terrain.points[i].x + offset, terrain.points[i].y);
+            }
+            graphics.strokePath();
 
-        // Draw Landing Pads Multipliers
-        terrain.landingPads.forEach(pad => {
-            graphics.lineStyle(3, 0x33ff33, 1);
-            graphics.lineBetween(pad.x1, pad.y, pad.x2, pad.y);
+            // Draw Landing Pads Multipliers
+            terrain.landingPads.forEach(pad => {
+                graphics.lineStyle(3, 0x33ff33, 1);
+                graphics.lineBetween(pad.x1 + offset, pad.y, pad.x2 + offset, pad.y);
+            });
         });
     }
 
@@ -798,6 +816,26 @@ function update(time, delta) {
 
         landerState.thrust = desiredThrust;
         landerState = window.LanderCore.updatePhysicsState(landerState, dt);
+
+        // Adjust scroll margins dynamically based on current zoom scale
+        const currentZoom = this.cameras.main.zoom;
+        const W_world = 800 / currentZoom;
+        const M_world = 120 / currentZoom;
+        
+        let screenX_world = landerState.x - this.cameras.main.scrollX;
+        // Wrap screenX_world to [-2000, 2000] to handle the 4000px wrap boundary
+        screenX_world = ((screenX_world + 2000) % 4000 + 4000) % 4000 - 2000;
+        
+        if (screenX_world > W_world - M_world) {
+            this.cameras.main.scrollX = landerState.x - (W_world - M_world);
+        } else if (screenX_world < M_world) {
+            this.cameras.main.scrollX = landerState.x - M_world;
+        }
+        
+        // Wrap camera scroll X at [0, 4000]
+        let sX = this.cameras.main.scrollX % 4000;
+        if (sX < 0) sX += 4000;
+        this.cameras.main.scrollX = sX;
 
         audio.setThrust(landerState.thrust);
         if (landerState.fuel < 200 && landerState.fuel > 0) {
@@ -902,12 +940,12 @@ function update(time, delta) {
               if (landerState.x < 40) {
                   landerGraphicsWrap.setVisible(true);
                   drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
-                  landerGraphicsWrap.setPosition(landerState.x + 800, landerState.y);
+                  landerGraphicsWrap.setPosition(landerState.x + 4000, landerState.y);
                   landerGraphicsWrap.setAngle(landerState.angle);
-              } else if (landerState.x > 760) {
+              } else if (landerState.x > 3960) {
                   landerGraphicsWrap.setVisible(true);
                   drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
-                  landerGraphicsWrap.setPosition(landerState.x - 800, landerState.y);
+                  landerGraphicsWrap.setPosition(landerState.x - 4000, landerState.y);
                   landerGraphicsWrap.setAngle(landerState.angle);
               } else {
                   landerGraphicsWrap.setVisible(false);
@@ -934,6 +972,18 @@ function update(time, delta) {
           landerGraphics.clear();
           landerGraphicsWrap.setVisible(false);
       }
+
+    // Update landing pad text label positions to wrap seamlessly
+    if (padTexts) {
+        const camX = this.cameras.main.scrollX;
+        padTexts.forEach(txt => {
+            if (txt.baseX !== undefined) {
+                let relativeX = txt.baseX - camX;
+                relativeX = ((relativeX + 2000) % 4000 + 4000) % 4000 - 2000;
+                txt.x = camX + relativeX;
+            }
+        });
+    }
 
     // Update HUD Stats
     if (scoreText) scoreText.setText(`SCORE: ${score}\nHIGH SCORE: ${highScore}`);
