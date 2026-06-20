@@ -10,13 +10,13 @@ try {
   assert.strictEqual(typeof Core.calculateLandingMultiplier, 'function');
 
   const perfectLanding = Core.checkLandingCondition(5, 10, 2);
-  assert.deepStrictEqual(perfectLanding, { success: true, reason: null });
+  assert.deepStrictEqual(perfectLanding, { success: true, reason: null, quality: "good", message: "SAFE TOUCHDOWN.", fuelPenalty: 0, scoreBonus: 0 });
 
   const tooFastVertically = Core.checkLandingCondition(5, 35, 2);
-  assert.deepStrictEqual(tooFastVertically, { success: false, reason: "speed" });
+  assert.deepStrictEqual(tooFastVertically, { success: false, reason: "speed", quality: "crash" });
 
   const tooCrooked = Core.checkLandingCondition(5, 10, 15);
-  assert.deepStrictEqual(tooCrooked, { success: false, reason: "angle" });
+  assert.deepStrictEqual(tooCrooked, { success: false, reason: "angle", quality: "crash" });
 
   // Test physics update
   const initialState = { x: 100, y: 100, vx: 10, vy: 0, angle: 0, fuel: 100, thrust: 0.2 };
@@ -28,7 +28,7 @@ try {
 
   // Test multiplier calculations
   assert.strictEqual(Core.calculateLandingMultiplier(20), 10); // Narrow pad
-  assert.strictEqual(Core.calculateLandingMultiplier(80), 2);  // Wide pad
+  assert.strictEqual(Core.calculateLandingMultiplier(140), 2);  // Wide pad
 
   // Test HTML and CSS setup (Task 2 verification)
   console.log("Running HTML/CSS structure checks...");
@@ -177,6 +177,29 @@ try {
   // Lander wraps around bounds horizontally (should not be collided at y: 100 in the air)
   const oobState = { x: -10, y: 100, vx: 0, vy: 10, angle: 0 };
   assert.strictEqual(Core.checkCollision(oobState, mockTerrain).collided, false);
+
+  // Test dynamic wrapping and touchdown quality classifications
+  console.log("Running Touchdown Quality & Dynamic Wrapping tests...");
+  
+  // 1. Verify dynamic wrapping in physics update
+  const wrapState = { x: 3995, y: 100, vx: 10, vy: 0, angle: 0, fuel: 100, thrust: 0 };
+  const wrapNext = Core.updatePhysicsState(wrapState, 1.0, 4000);
+  assert.strictEqual(wrapNext.x, 5); // 3995 + 10 - 4000 = 5
+
+  // 2. Verify landing classification results
+  const perfLanding = Core.checkLandingCondition(2, 5, 0.5);
+  assert.strictEqual(perfLanding.success, true);
+  assert.strictEqual(perfLanding.quality, "perfect");
+  assert.strictEqual(perfLanding.scoreBonus, 500);
+  assert.strictEqual(perfLanding.fuelPenalty, 0);
+
+  const hardLanding = Core.checkLandingCondition(12, 22, 4);
+  assert.strictEqual(hardLanding.success, true);
+  assert.strictEqual(hardLanding.quality, "hard");
+  assert.strictEqual(hardLanding.fuelPenalty, 500);
+
+  const failLanding = Core.checkLandingCondition(18, 35, 8);
+  assert.strictEqual(failLanding.success, false);
 
   console.log("ALL TESTS PASSED!");
 } catch (err) {

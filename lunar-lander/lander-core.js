@@ -7,16 +7,64 @@ function checkLandingCondition(vx, vy, angle) {
   const maxSafeVy = 30;
   const maxSafeAngle = 5; // degrees
 
-  if (Math.abs(vx) > maxSafeVx || Math.abs(vy) > maxSafeVy) {
-    return { success: false, reason: "speed" };
+  const absVx = Math.abs(vx);
+  const absVy = Math.abs(vy);
+  const absAngle = Math.abs(angle);
+
+  if (absVx > maxSafeVx || absVy > maxSafeVy) {
+    return { success: false, reason: "speed", quality: "crash" };
   }
-  if (Math.abs(angle) > maxSafeAngle) {
-    return { success: false, reason: "angle" };
+  if (absAngle > maxSafeAngle) {
+    return { success: false, reason: "angle", quality: "crash" };
   }
-  return { success: true, reason: null };
+
+  // Perfect Touchdown Conditions
+  if (absVx <= 4 && absVy <= 8 && absAngle <= 1) {
+    const messages = [
+      "PERFECT LANDING! THE EAGLE HAS LANDED.",
+      "FLAWLESS TOUCHDOWN! OUTSTANDING WORK.",
+      "PERFECT SCORE! HOUSTON IS PLEASED."
+    ];
+    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    return {
+      success: true,
+      reason: null,
+      quality: "perfect",
+      message: randomMsg,
+      fuelPenalty: 0,
+      scoreBonus: 500
+    };
+  }
+
+  // Hard Touchdown Conditions
+  if (absVx > 10 || absVy > 20 || absAngle > 3) {
+    const messages = [
+      "HARD LANDING HAS DAMAGED YOUR LIFE SUPPORT!",
+      "YOU HAVE LANDED BUT THIS IS A ONE WAY TRIP!"
+    ];
+    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    return {
+      success: true,
+      reason: null,
+      quality: "hard",
+      message: randomMsg,
+      fuelPenalty: 500,
+      scoreBonus: 0
+    };
+  }
+
+  // Good Touchdown Conditions
+  return {
+    success: true,
+    reason: null,
+    quality: "good",
+    message: "SAFE TOUCHDOWN.",
+    fuelPenalty: 0,
+    scoreBonus: 0
+  };
 }
 
-function updatePhysicsState(state, dt) {
+function updatePhysicsState(state, dt, wrapWidth = 4000) {
   let fuel = state.fuel;
   let thrust = state.thrust;
   if (fuel <= 0) {
@@ -41,9 +89,9 @@ function updatePhysicsState(state, dt) {
 
   // Wrap x coordinates horizontally
   if (x < 0) {
-    x += 800;
-  } else if (x > 800) {
-    x -= 800;
+    x += wrapWidth;
+  } else if (x > wrapWidth) {
+    x -= wrapWidth;
   }
 
   return {
@@ -58,8 +106,8 @@ function updatePhysicsState(state, dt) {
 }
 
 function calculateLandingMultiplier(padWidth) {
-  if (padWidth <= 38) return 10;
-  if (padWidth <= 55) return 5;
+  if (padWidth <= 75) return 10;
+  if (padWidth <= 130) return 5;
   return 2;
 }
 
@@ -106,7 +154,7 @@ function generateTerrain(width, height, count, difficulty) {
 
   // Inject flat landing pads
   const padCount = 3;
-  const padWidths = [80, 50, 36]; // Wide (2x), Medium (5x), Narrow (10x)
+  const padWidths = [250, 120, 70]; // Wide (2x), Medium (5x), Narrow (10x)
   const padMultipliers = [2, 5, 10];
   const occupied = new Array(segments + 1).fill(false);
   
@@ -192,16 +240,15 @@ function generateTerrain(width, height, count, difficulty) {
 function getTerrainHeight(terrain, x) {
   if (!terrain || !terrain.points || terrain.points.length === 0) return 600;
   
-  // Wrap x coordinates to [0, 800]
-  let checkX = x % 800;
+  const segments = terrain.points.length - 1;
+  const terrainWidth = terrain.points[segments].x;
+  
+  let checkX = x % terrainWidth;
   if (checkX < 0) {
-    checkX += 800;
+    checkX += terrainWidth;
   }
   
-  const segments = terrain.points.length - 1;
-  const width = terrain.points[segments].x;
-  const dx = width / segments;
-  
+  const dx = terrainWidth / segments;
   const index = Math.floor(checkX / dx);
   if (index < 0 || index >= segments) {
     return 600;
