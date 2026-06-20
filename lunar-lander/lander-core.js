@@ -117,7 +117,7 @@ function generateTerrain(width, height, count, difficulty) {
       endSeg = startSeg + maxSegmentOffset;
       
       overlap = false;
-      for (let s = startSeg - 2; s <= endSeg + 2; s++) {
+      for (let s = startSeg - 6; s <= endSeg + 6; s++) {
         if (s >= 0 && s <= segments && occupied[s]) {
           overlap = true;
           break;
@@ -126,14 +126,43 @@ function generateTerrain(width, height, count, difficulty) {
       attempts++;
     }
     
-    // Mark range as occupied
-    for (let s = startSeg; s <= endSeg; s++) {
-      occupied[s] = true;
+    // Mark range as occupied (with buffers to prevent overlap of transitions)
+    for (let s = startSeg - 5; s <= endSeg + 5; s++) {
+      if (s >= 0 && s <= segments) {
+        occupied[s] = true;
+      }
     }
     
-    const padY = height - 80 - Math.random() * 150;
+    // Align pad height to the original terrain's average height in that range
+    let originalAvgY = 0;
+    for (let s = startSeg; s <= endSeg; s++) {
+      originalAvgY += heights[s];
+    }
+    const padY = originalAvgY / (endSeg - startSeg + 1);
+    
     for (let s = startSeg; s <= endSeg; s++) {
       heights[s] = padY;
+    }
+
+    // Taper left transition over N = 4 segments
+    const N = 4;
+    const leftBoundarySeg = startSeg - N - 1;
+    if (leftBoundarySeg >= 0) {
+      const yLeftBoundary = heights[leftBoundarySeg];
+      for (let s = startSeg - N; s < startSeg; s++) {
+        const t = (s - leftBoundarySeg) / (N + 1);
+        heights[s] = yLeftBoundary + (padY - yLeftBoundary) * t;
+      }
+    }
+
+    // Taper right transition over N = 4 segments
+    const rightBoundarySeg = endSeg + N + 1;
+    if (rightBoundarySeg <= segments) {
+      const yRightBoundary = heights[rightBoundarySeg];
+      for (let s = endSeg + 1; s <= endSeg + N; s++) {
+        const t = (s - endSeg) / (N + 1);
+        heights[s] = padY + (yRightBoundary - padY) * t;
+      }
     }
     
     landingPads.push({
