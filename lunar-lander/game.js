@@ -628,9 +628,9 @@ function update(time, delta) {
     graphics.clear();
 
     // 1. Draw Starfield in a single batch with static alpha
-    graphics.lineStyle(1, 0xffffff, 0.7);
+    graphics.fillStyle(0xffffff, 0.7);
     stars.forEach(s => {
-        graphics.strokePoint(s.x, s.y);
+        graphics.fillPoint(s.x, s.y, 1);
     });
 
     // 2. Draw Vector Terrain
