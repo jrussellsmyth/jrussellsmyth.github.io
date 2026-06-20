@@ -66,7 +66,7 @@ class SynthEngine {
         this.startWarningAlarm();
     }
 
-    playExplosion() {
+    playExplosion(volumeFactor = 1.0) { // playExplosion()
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         
@@ -92,7 +92,7 @@ class SynthEngine {
 
         // Rapid gain decay envelope
         const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.setValueAtTime(0.5 * volumeFactor, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
 
         noiseNode.connect(filter);
@@ -103,7 +103,7 @@ class SynthEngine {
         noiseNode.stop(now + 1.6);
     }
 
-    playSuccess() {
+    playSuccess(pitchFactor = 1.0) { // playSuccess()
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
@@ -111,7 +111,7 @@ class SynthEngine {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, now + i * 0.15);
+            osc.frequency.setValueAtTime(freq * pitchFactor, now + i * 0.15);
             gain.gain.setValueAtTime(0, now + i * 0.15);
             gain.gain.linearRampToValueAtTime(0.1, now + i * 0.15 + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.4);
@@ -221,6 +221,7 @@ function preload() {
 
 function create() {
     currentScene = this;
+    this.nextLevelFuel = 1000;
     graphics = this.add.graphics();
     landerGraphics = this.add.graphics();
     landerGraphicsWrap = this.add.graphics();
@@ -595,6 +596,10 @@ function resetLander() {
 
 function generateNewLevel(scene) {
     const activeScene = scene || currentScene || this;
+    if (activeScene) {
+        fuel = activeScene.nextLevelFuel !== undefined ? activeScene.nextLevelFuel : 1000;
+        activeScene.nextLevelFuel = 1000; // Reset for next touchdown
+    }
     terrain = window.LanderCore.generateTerrain(4000, 600, 12, level);
 
     // Clear old pad texts to avoid duplicate game objects
@@ -878,25 +883,48 @@ function update(time, delta) {
                     // Safe Landing
                     audio.setThrust(0);
                     audio.stopWarningAlarm();
-                    audio.playSuccess();
                     
-                    const landingScore = Math.round(pad.multiplier * landerState.fuel);
-                    score += landingScore;
+                    // Play tuned chimes based on touchdown quality
+                    if (check.quality === "perfect") {
+                        audio.playSuccess(1.5); // High pitch arpeggio
+                    } else if (check.quality === "hard") {
+                        audio.playSuccess(0.8); // Detuned arpeggio sweep
+                        // Play a brief warning sound rumbles
+                        audio.playExplosion(0.1); 
+                    } else {
+                        audio.playSuccess(1.0); // Standard pitch
+                    }
+                    
+                    let landingPoints = Math.round(pad.multiplier * landerState.fuel);
+                    
+                    // Apply hard landing penalties
+                    if (check.quality === "hard") {
+                        landingPoints = Math.round(landingPoints * 0.75); // 25% score reduction
+                        this.nextLevelFuel = 500; // Penalized starting fuel
+                    } else if (check.quality === "perfect") {
+                        landingPoints += check.scoreBonus; // 500 bonus points
+                        this.nextLevelFuel = 1000;
+                    } else {
+                        this.nextLevelFuel = 1000;
+                    }
+                    
+                    score += landingPoints;
                     if (score > highScore) {
                         highScore = score;
                     }
                     
                     setScreenState(STATE_SUCCESS);
                     screenDetailText.setText(
-                        `SAFE LANDING!\n\n` +
+                        `${check.message}\n\n` +
                         `PAD MULTIPLIER: ${pad.multiplier}X\n` +
                         `REMAINING FUEL: ${Math.round(landerState.fuel)}\n` +
-                        `POINTS AWARDED : ${landingScore}`
+                        `POINTS AWARDED : ${landingPoints}`
                     );
                     
                     this.time.delayedCall(2000, () => {
                         level++;
-                        fuel = 1000; // Replenish fuel
+                        fuel = currentScene.nextLevelFuel !== undefined ? currentScene.nextLevelFuel : 1000;
+                        currentScene.nextLevelFuel = 1000; // Reset for next touchdown
                         resetLander();
                         generateNewLevel(currentScene);
                         setScreenState(STATE_PLAYING);
