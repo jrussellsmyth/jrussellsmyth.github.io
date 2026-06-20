@@ -59,6 +59,30 @@ try {
   assert.ok(cssContent.includes('drop-shadow'), "CSS must define drop-shadow for CRT glow");
   assert.ok(cssContent.includes('linear-gradient'), "CSS must define linear-gradient for scanlines");
 
+  // Terrain generator tests
+  console.log("Running Terrain generator tests...");
+  const width = 800;
+  const height = 600;
+  const terrain = Core.generateTerrain(width, height, 8, 1.0);
+
+  // Assert we got valid coordinates
+  assert.ok(terrain.points.length > 50);
+  assert.strictEqual(terrain.points[0].x, 0);
+  assert.strictEqual(terrain.points[terrain.points.length - 1].x, width);
+
+  // Assert landing pads exist
+  assert.ok(terrain.landingPads.length >= 2);
+  terrain.landingPads.forEach(pad => {
+    assert.ok(pad.x1 < pad.x2);
+    assert.strictEqual(pad.multiplier >= 2, true);
+    // Find matching flat stretch in terrain points
+    const padPoints = terrain.points.filter(p => p.x >= pad.x1 && p.x <= pad.x2);
+    assert.ok(padPoints.length >= 2);
+    // Verify flatness
+    const yVal = padPoints[0].y;
+    padPoints.forEach(p => assert.strictEqual(p.y, yVal));
+  });
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);

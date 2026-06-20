@@ -56,8 +56,104 @@ function calculateLandingMultiplier(padWidth) {
   return 2;
 }
 
+function generateTerrain(width, height, count, difficulty) {
+  // Support both signatures:
+  // 1. generateTerrain(width, height, count, difficulty)
+  // 2. generateTerrain(width, height, difficulty)
+  let actualDifficulty = 1.0;
+  if (difficulty !== undefined) {
+    actualDifficulty = difficulty;
+  } else if (count !== undefined) {
+    actualDifficulty = count;
+  }
+
+  const points = [];
+  const landingPads = [];
+  
+  // Seed points evenly across width
+  const segments = 128;
+  const dx = width / segments;
+  const heights = new Array(segments + 1);
+
+  // Initial boundary heights
+  heights[0] = height - 100 - Math.random() * 150;
+  heights[segments] = height - 100 - Math.random() * 150;
+
+  // Midpoint displacement logic
+  function displace(left, right, roughness) {
+    if (right - left <= 1) return;
+    const mid = Math.floor((left + right) / 2);
+    const averageHeight = (heights[left] + heights[right]) / 2;
+    const offset = (Math.random() - 0.5) * roughness * (right - left) * 8;
+    
+    // Clamp to screen bounds
+    heights[mid] = Math.max(height - 400, Math.min(height - 20, averageHeight + offset));
+
+    displace(left, mid, roughness);
+    displace(mid, right, roughness);
+  }
+  
+  displace(0, segments, 1.2 * actualDifficulty);
+
+  // Inject flat landing pads
+  const padCount = 3;
+  const padWidths = [60, 40, 20]; // Wide (2x), Medium (5x), Narrow (10x)
+  const padMultipliers = [2, 5, 10];
+  const occupied = new Array(segments + 1).fill(false);
+  
+  for (let i = 0; i < padCount; i++) {
+    const pWidth = padWidths[i];
+    const pMult = padMultipliers[i];
+    const maxSegmentOffset = Math.floor(pWidth / dx);
+    
+    let startSeg = 0;
+    let endSeg = 0;
+    let attempts = 0;
+    let overlap = true;
+    
+    while (overlap && attempts < 100) {
+      startSeg = Math.floor(Math.random() * (segments - maxSegmentOffset - 10)) + 5;
+      endSeg = startSeg + maxSegmentOffset;
+      
+      overlap = false;
+      for (let s = startSeg - 2; s <= endSeg + 2; s++) {
+        if (s >= 0 && s <= segments && occupied[s]) {
+          overlap = true;
+          break;
+        }
+      }
+      attempts++;
+    }
+    
+    // Mark range as occupied
+    for (let s = startSeg; s <= endSeg; s++) {
+      occupied[s] = true;
+    }
+    
+    const padY = height - 80 - Math.random() * 150;
+    for (let s = startSeg; s <= endSeg; s++) {
+      heights[s] = padY;
+    }
+    
+    landingPads.push({
+      x1: startSeg * dx,
+      x2: endSeg * dx,
+      y: padY,
+      multiplier: pMult
+    });
+  }
+
+  // Assemble final output points
+  for (let s = 0; s <= segments; s++) {
+    points.push({ x: s * dx, y: heights[s] });
+  }
+
+  return { points, landingPads };
+}
+
 module.exports = {
   checkLandingCondition,
   updatePhysicsState,
-  calculateLandingMultiplier
+  calculateLandingMultiplier,
+  generateTerrain
 };
