@@ -595,7 +595,7 @@ function resetLander() {
 
 function generateNewLevel(scene) {
     const activeScene = scene || currentScene || this;
-    terrain = window.LanderCore.generateTerrain(4000, 600, 12, 1.0);
+    terrain = window.LanderCore.generateTerrain(4000, 600, 12, level);
 
     // Clear old pad texts to avoid duplicate game objects
     padTexts.forEach(txt => txt.destroy());
@@ -700,9 +700,9 @@ function updateAndDrawDebris(g, dt) {
         g.lineBetween(x1, y1, x2, y2);
 
         // Double-draw debris if near horizontal wrapping borders
-        if (d.x < 40) {
+        if (d.x < 1600) {
             g.lineBetween(x1 + 4000, y1, x2 + 4000, y2);
-        } else if (d.x > 3960) {
+        } else if (d.x > 2400) {
             g.lineBetween(x1 - 4000, y1, x2 - 4000, y2);
         }
     });
@@ -753,6 +753,11 @@ function update(time, delta) {
     graphics.fillStyle(0xffffff, 0.7);
     stars.forEach(s => {
         graphics.fillPoint(s.x, s.y, 1);
+        if (s.x < 1600) {
+            graphics.fillPoint(s.x + 4000, s.y, 1);
+        } else if (s.x > 2400) {
+            graphics.fillPoint(s.x - 4000, s.y, 1);
+        }
     });
 
     // 2. Draw Vector Terrain
@@ -937,12 +942,12 @@ function update(time, delta) {
 
               // Render wrapping double-draw
               landerGraphicsWrap.clear();
-              if (landerState.x < 40) {
+              if (landerState.x < 1600) {
                   landerGraphicsWrap.setVisible(true);
                   drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
                   landerGraphicsWrap.setPosition(landerState.x + 4000, landerState.y);
                   landerGraphicsWrap.setAngle(landerState.angle);
-              } else if (landerState.x > 3960) {
+              } else if (landerState.x > 2400) {
                   landerGraphicsWrap.setVisible(true);
                   drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
                   landerGraphicsWrap.setPosition(landerState.x - 4000, landerState.y);

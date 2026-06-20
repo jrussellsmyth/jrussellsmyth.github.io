@@ -55,3 +55,32 @@ ALL TESTS PASSED!
 - **Completeness**: All items in the spec have been fully implemented and verified.
 - **Quality**: The math for wrapping `screenX_world` and `txt.x` handles crossing boundaries seamlessly, avoiding standard wrapping bugs (e.g. ship getting stuck at the edge).
 - **Testing**: Added rigorous unit tests in `test.js` covering margins, left/right scrolling, and wrap crossings in both directions.
+
+## Task 2 Review Fixes
+
+We addressed the findings from the Task 2 review by making the following changes in [lunar-lander/game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js):
+1. **Lander Wrapping Visibility**: Increased wrapping margin check from `40`/`3960` to `1600`/`2400` so that a wrapped lander copy is drawn and positioned whenever the lander is in the left/right sections of the 4000px world.
+2. **Debris Wrapping Visibility**: Draw debris wrapping copies shifted by `+4000` or `-4000` when the debris x-coordinate is `< 1600` or `> 2400`.
+3. **Stars Wrapping Visibility**: Also draw wrapped copies of the stars (fillPoint) shifted by `+4000` or `-4000` when the star x-coordinate is `< 1600` or `> 2400` to prevent blank backgrounds when the camera wraps.
+4. **Dynamic Terrain Difficulty**: Replaced the hardcoded difficulty parameter `1.0` in `generateTerrain` call with the dynamic `level` variable.
+
+### Verification of Fixes
+
+The test suite was run and verified:
+```bash
+node lunar-lander/test.js
+```
+
+Output:
+```
+Running Core logic tests...
+Running HTML/CSS structure checks...
+Running Terrain generator tests...
+Running Phaser Vector Rendering Engine checks...
+Running Web Audio Synth checks...
+Running Custom Inputs & Mirrored Mobile Gutters checks...
+Running Collision Detection tests...
+Running Touchdown Quality & Dynamic Wrapping tests...
+Running Camera scroll tracking & wrapping tests...
+ALL TESTS PASSED!
+```
