@@ -26,13 +26,13 @@ class SynthEngine {
             
             // Noise Generator for rumble
             const bufferSize = this.ctx.sampleRate * 2;
-            const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-            const output = noiseBuffer.getChannelData(0);
+            this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const output = this.noiseBuffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) {
                 output[i] = Math.random() * 2 - 1;
             }
             const noiseNode = this.ctx.createBufferSource();
-            noiseNode.buffer = noiseBuffer;
+            noiseNode.buffer = this.noiseBuffer;
             noiseNode.loop = true;
 
             const noiseFilter = this.ctx.createBiquadFilter();
@@ -70,20 +70,37 @@ class SynthEngine {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         
-        const osc = this.ctx.createOscillator();
+        // Use pre-created noise buffer or create one if not initialized
+        let buffer = this.noiseBuffer;
+        if (!buffer) {
+            const bufferSize = this.ctx.sampleRate * 2;
+            buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const output = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+        }
+
+        const noiseNode = this.ctx.createBufferSource();
+        noiseNode.buffer = buffer;
+
+        // Filter sweep: starts high (1000Hz) and decays exponentially to 50Hz
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, now);
+        filter.frequency.exponentialRampToValueAtTime(50, now + 1.5);
+
+        // Rapid gain decay envelope
         const gain = this.ctx.createGain();
-        
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(100, now);
-        osc.frequency.exponentialRampToValueAtTime(10, now + 1.5);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
 
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
-
-        osc.connect(gain);
+        noiseNode.connect(filter);
+        filter.connect(gain);
         gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(now + 1.6);
+
+        noiseNode.start(now);
+        noiseNode.stop(now + 1.6);
     }
 
     playSuccess() {
@@ -153,6 +170,7 @@ const config = {
 const game = new Phaser.Game(config);
 
 let graphics;
+let landerGraphics;
 let terrain;
 let landerState;
 let cursorKeys;
@@ -198,6 +216,7 @@ function preload() {
 function create() {
     currentScene = this;
     graphics = this.add.graphics();
+    landerGraphics = this.add.graphics();
     cursorKeys = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -337,8 +356,9 @@ function create() {
     const syncSteer = (val) => {
         audio.init();
         if (gameState !== STATE_PLAYING) return;
-        // Steer value mapping
-        landerState.targetSteerAngle = parseFloat(val);
+        // Steer value mapping: slider value controls rotational rate
+        landerState.targetSteerRate = parseFloat(val) * 2;
+        landerState.targetSteerAngle = parseFloat(val); // Keep for compatibility/test
         if (leftSteerSlider) leftSteerSlider.value = val;
         if (rightSteerSlider) rightSteerSlider.value = val;
     };
@@ -358,6 +378,10 @@ function create() {
         rightSteerSlider.addEventListener('touchend', releaseSteer);
         rightSteerSlider.addEventListener('mouseup', releaseSteer);
     }
+
+    // Suspend and resume the Web Audio context when the tab loses/gains focus
+    this.game.events.on('blur', () => { if (audio.ctx) audio.ctx.suspend(); });
+    this.game.events.on('focus', () => { if (audio.ctx) audio.ctx.resume(); });
 }
 
 function startGame() {
@@ -438,7 +462,10 @@ function syncSlidersToLander() {
     if (rightThrustSlider) rightThrustSlider.value = thrustVal;
     if (leftSteerSlider) leftSteerSlider.value = 0;
     if (rightSteerSlider) rightSteerSlider.value = 0;
-    if (landerState) landerState.targetSteerAngle = 0;
+    if (landerState) {
+        landerState.targetSteerRate = 0;
+        landerState.targetSteerAngle = 0; // Keep targetSteerAngle for reference/test
+    }
 }
 
 function resetLander() {
@@ -449,7 +476,9 @@ function resetLander() {
         vy: 10,
         angle: 0,
         fuel: fuel,
-        thrust: 0
+        thrust: 0,
+        targetSteerRate: 0,
+        targetSteerAngle: 0
     };
     syncSlidersToLander();
 }
@@ -544,22 +573,20 @@ function updateAndDrawDebris(g, dt) {
         d.y += d.vy * dt;
         d.angle += d.vAngle * dt;
 
-        g.save();
-        g.translateCanvas(d.x, d.y);
-        g.rotateCanvas((d.angle * Math.PI) / 180);
-        g.beginPath();
-        g.moveTo(d.lx1, d.ly1);
-        g.lineTo(d.lx2, d.ly2);
-        g.strokePath();
-        g.restore();
+        const rad = (d.angle * Math.PI) / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        const x1 = d.x + d.lx1 * cos - d.ly1 * sin;
+        const y1 = d.y + d.lx1 * sin + d.ly1 * cos;
+        const x2 = d.x + d.lx2 * cos - d.ly2 * sin;
+        const y2 = d.y + d.lx2 * sin + d.ly2 * cos;
+
+        g.lineBetween(x1, y1, x2, y2);
     });
 }
 
 function drawVectorLander(g, x, y, angle, thrust) {
-    g.save();
-    g.translateCanvas(x, y);
-    g.rotateCanvas((angle * Math.PI) / 180);
-
     // Neon Vector line style
     g.lineStyle(2, 0x33ff33, 1);
 
@@ -594,17 +621,15 @@ function drawVectorLander(g, x, y, angle, thrust) {
         g.lineTo(3, 9);
         g.strokePath();
     }
-
-    g.restore();
 }
 
 function update(time, delta) {
     const dt = delta / 1000;
     graphics.clear();
 
-    // 1. Draw Starfield
+    // 1. Draw Starfield in a single batch with static alpha
+    graphics.lineStyle(1, 0xffffff, 0.7);
     stars.forEach(s => {
-        graphics.lineStyle(1, 0xffffff, s.alpha);
         graphics.strokePoint(s.x, s.y);
     });
 
@@ -655,10 +680,9 @@ function update(time, delta) {
             landerState.angle -= 90 * dt;
         } else if ((cursorKeys.right && cursorKeys.right.isDown) || (this.wasd && this.wasd.right && this.wasd.right.isDown)) {
             landerState.angle += 90 * dt;
-        } else if (landerState.targetSteerAngle !== undefined) {
-            // Smoothly rotate lander towards target touch angle
-            const diff = landerState.targetSteerAngle - landerState.angle;
-            landerState.angle += diff * 0.1;
+        } else if (landerState.targetSteerRate !== undefined) {
+            // Apply slider rotational velocity
+            landerState.angle += landerState.targetSteerRate * dt;
         }
 
         landerState.thrust = desiredThrust;
@@ -718,60 +742,68 @@ function update(time, delta) {
                         reasonText += `SPEED TOO HIGH!\n` +
                             `H.SPEED: ${landerState.vx.toFixed(1)} (MAX 15.0)\n` +
                             `V.SPEED: ${landerState.vy.toFixed(1)} (MAX 30.0)`;
-                    } else if (check.reason === 'angle') {
-                        reasonText += `ANGLE TOO CROOKED!\n` +
-                            `ANGLE: ${Math.round(landerState.angle)} DEG (MAX 5)`;
-                    }
-                    screenDetailText.setText(reasonText);
-                    
-                    this.time.delayedCall(2000, () => {
-                        if (lives > 0) {
-                            fuel = 1000; // Reset/replenish fuel
-                            resetLander();
-                            setScreenState(STATE_PLAYING);
-                        } else {
-                            setScreenState(STATE_GAMEOVER);
-                        }
-                    });
-                }
-            } else {
-                // Crashed on general terrain
-                audio.setThrust(0);
-                audio.stopWarningAlarm();
-                triggerExplosion();
-                lives--;
-                
-                setScreenState(STATE_CRASHED);
-                screenDetailText.setText('CRASHED ON TERRAIN!\n\nMUST LAND ON FLAT PADS.');
-                
-                this.time.delayedCall(2000, () => {
-                    if (lives > 0) {
-                        fuel = 1000; // Reset/replenish fuel
-                        resetLander();
-                        setScreenState(STATE_PLAYING);
-                    } else {
-                        setScreenState(STATE_GAMEOVER);
-                    }
-                });
-            }
-        }
-
-        if (gameState === STATE_PLAYING) {
-            drawVectorLander(graphics, landerState.x, landerState.y, landerState.angle, landerState.thrust);
-        }
-    } else if (gameState === STATE_SUCCESS) {
-        audio.setThrust(0);
-        audio.stopWarningAlarm();
-        // Keep ship drawn frozen at its landed spot
-        drawVectorLander(graphics, landerState.x, landerState.y, landerState.angle, 0);
-    } else if (gameState === STATE_CRASHED) {
-        audio.setThrust(0);
-        audio.stopWarningAlarm();
-        updateAndDrawDebris(graphics, dt);
-    } else {
-        audio.setThrust(0);
-        audio.stopWarningAlarm();
-    }
+                      } else if (check.reason === 'angle') {
+                          reasonText += `ANGLE TOO CROOKED!\n` +
+                              `ANGLE: ${Math.round(landerState.angle)} DEG (MAX 5)`;
+                      }
+                      screenDetailText.setText(reasonText);
+                      
+                      this.time.delayedCall(2000, () => {
+                          if (lives > 0) {
+                              fuel = 1000; // Reset/replenish fuel
+                              resetLander();
+                              setScreenState(STATE_PLAYING);
+                          } else {
+                              setScreenState(STATE_GAMEOVER);
+                          }
+                      });
+                  }
+              } else {
+                  // Crashed on general terrain
+                  audio.setThrust(0);
+                  audio.stopWarningAlarm();
+                  triggerExplosion();
+                  lives--;
+                  
+                  setScreenState(STATE_CRASHED);
+                  screenDetailText.setText('CRASHED ON TERRAIN!\n\nMUST LAND ON FLAT PADS.');
+                  
+                  this.time.delayedCall(2000, () => {
+                      if (lives > 0) {
+                          fuel = 1000; // Reset/replenish fuel
+                          resetLander();
+                          setScreenState(STATE_PLAYING);
+                      } else {
+                          setScreenState(STATE_GAMEOVER);
+                      }
+                  });
+              }
+          }
+  
+          if (gameState === STATE_PLAYING) {
+              landerGraphics.clear();
+              drawVectorLander(landerGraphics, 0, 0, 0, landerState.thrust);
+              landerGraphics.setPosition(landerState.x, landerState.y);
+              landerGraphics.setAngle(landerState.angle);
+          }
+      } else if (gameState === STATE_SUCCESS) {
+          audio.setThrust(0);
+          audio.stopWarningAlarm();
+          // Keep ship drawn frozen at its landed spot
+          landerGraphics.clear();
+          drawVectorLander(landerGraphics, 0, 0, 0, 0);
+          landerGraphics.setPosition(landerState.x, landerState.y);
+          landerGraphics.setAngle(landerState.angle);
+      } else if (gameState === STATE_CRASHED) {
+          audio.setThrust(0);
+          audio.stopWarningAlarm();
+          landerGraphics.clear();
+          updateAndDrawDebris(graphics, dt);
+      } else {
+          audio.setThrust(0);
+          audio.stopWarningAlarm();
+          landerGraphics.clear();
+      }
 
     // Update HUD Stats
     if (scoreText) scoreText.setText(`SCORE: ${score}\nHIGH SCORE: ${highScore}`);

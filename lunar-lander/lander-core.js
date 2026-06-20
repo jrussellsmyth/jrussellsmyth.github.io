@@ -93,7 +93,8 @@ function generateTerrain(width, height, count, difficulty) {
     displace(mid, right, roughness);
   }
   
-  displace(0, segments, 1.2 * actualDifficulty);
+  const roughnessCap = Math.min(1.8, 1.2 + actualDifficulty * 0.08);
+  displace(0, segments, roughnessCap);
 
   // Inject flat landing pads
   const padCount = 3;
@@ -188,7 +189,9 @@ function checkCollision(landerState, terrain) {
   const checkPoints = [
     { lx: -16, ly: 15 },
     { lx: 16, ly: 15 },
-    { lx: 0, ly: 9 }
+    { lx: 0, ly: 9 },
+    { lx: -10, ly: -5 },
+    { lx: 10, ly: -5 }
   ];
 
   for (let pt of checkPoints) {

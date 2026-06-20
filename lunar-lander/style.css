@@ -149,3 +149,42 @@ body {
         display: flex; /* Show mobile sliders */
     }
 }
+
+#portrait-warning {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+    color: #33ff33;
+    z-index: 9999;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    border: 4px double #33ff33;
+    box-sizing: border-box;
+}
+
+#portrait-warning h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #33ff33;
+    letter-spacing: 2px;
+}
+
+#portrait-warning p {
+    font-size: 12px;
+    line-height: 20px;
+    text-shadow: 0 0 5px #33ff33;
+    max-width: 80%;
+}
+
+@media (orientation: portrait) {
+    #portrait-warning {
+        display: flex;
+    }
+}
