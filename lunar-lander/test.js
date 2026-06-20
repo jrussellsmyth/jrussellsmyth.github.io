@@ -86,6 +86,15 @@ try {
   // Phaser Vector Rendering Engine checks (Task 4 verification)
   console.log("Running Phaser Vector Rendering Engine checks...");
   assert.ok(fs.existsSync(path.join(__dirname, 'game.js')), "game.js should exist");
+  const gamePathForV = path.join(__dirname, 'game.js');
+  const gameContentForTask3 = fs.readFileSync(gamePathForV, 'utf8');
+  assert.ok(gameContentForTask3.includes('landerGraphicsWrap.clear()'), "game.js must clear wrapping lander graphics");
+  const successIndex = gameContentForTask3.lastIndexOf('gameState === STATE_SUCCESS');
+  assert.ok(successIndex !== -1, "game.js must define STATE_SUCCESS handling");
+  const successBlock = gameContentForTask3.slice(successIndex, successIndex + 1000);
+  assert.ok(successBlock.includes('landerGraphicsWrap.clear()'), "game.js must clear wrapping lander graphic in success state");
+  assert.ok(successBlock.includes('landerState.x < 1600'), "game.js must double-draw near left edge in success state");
+  assert.ok(successBlock.includes('landerState.x > 2400'), "game.js must double-draw near right edge in success state");
 
   // Web Audio Synth checks (Task 5 verification)
   console.log("Running Web Audio Synth checks...");

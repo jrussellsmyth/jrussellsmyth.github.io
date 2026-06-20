@@ -154,7 +154,8 @@ function generateTerrain(width, height, count, difficulty) {
 
   // Inject flat landing pads
   const padCount = 3;
-  const padWidths = [250, 120, 70]; // Wide (2x), Medium (5x), Narrow (10x)
+  const scale = width / 4000;
+  const padWidths = [250, 120, 70].map(w => w * scale); // Wide (2x), Medium (5x), Narrow (10x)
   const padMultipliers = [2, 5, 10];
   const occupied = new Array(segments + 1).fill(false);
   

@@ -964,7 +964,22 @@ function update(time, delta) {
           drawVectorLander(landerGraphics, 0, 0, 0, 0);
           landerGraphics.setPosition(landerState.x, landerState.y);
           landerGraphics.setAngle(landerState.angle);
-          landerGraphicsWrap.setVisible(false);
+
+          // Render wrapping double-draw frozen at landed spot
+          landerGraphicsWrap.clear();
+          if (landerState.x < 1600) {
+              landerGraphicsWrap.setVisible(true);
+              drawVectorLander(landerGraphicsWrap, 0, 0, 0, 0);
+              landerGraphicsWrap.setPosition(landerState.x + 4000, landerState.y);
+              landerGraphicsWrap.setAngle(landerState.angle);
+          } else if (landerState.x > 2400) {
+              landerGraphicsWrap.setVisible(true);
+              drawVectorLander(landerGraphicsWrap, 0, 0, 0, 0);
+              landerGraphicsWrap.setPosition(landerState.x - 4000, landerState.y);
+              landerGraphicsWrap.setAngle(landerState.angle);
+          } else {
+              landerGraphicsWrap.setVisible(false);
+          }
       } else if (gameState === STATE_CRASHED) {
           audio.setThrust(0);
           audio.stopWarningAlarm();
