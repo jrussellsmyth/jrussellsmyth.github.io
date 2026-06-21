@@ -182,6 +182,9 @@ let scoreText;
 let fuelText;
 let levelLivesText;
 let speedText;
+let levelTime = 0;
+let hudTextGraphics;
+let worldTextGraphics;
 
 // Mobile touch button state
 window.isThrustingButtonActive = false;
@@ -225,6 +228,8 @@ function create() {
     graphics = this.add.graphics();
     landerGraphics = this.add.graphics();
     landerGraphicsWrap = this.add.graphics();
+    hudTextGraphics = this.add.graphics();
+    worldTextGraphics = this.add.graphics();
     cursorKeys = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -247,25 +252,25 @@ function create() {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    }).setScrollFactor(0);
+    }).setScrollFactor(0).setAlpha(0);
 
     fuelText = this.add.text(220, 20, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    }).setScrollFactor(0);
+    }).setScrollFactor(0).setAlpha(0);
 
     levelLivesText = this.add.text(420, 20, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    }).setScrollFactor(0);
+    }).setScrollFactor(0).setAlpha(0);
 
     speedText = this.add.text(620, 20, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '10px',
         color: '#33ff33'
-    }).setScrollFactor(0);
+    }).setScrollFactor(0).setAlpha(0);
 
     // Title/Screen overlay texts
     screenTitleText = this.add.text(400, 160, '', {
@@ -273,7 +278,7 @@ function create() {
         fontSize: '28px',
         color: '#33ff33',
         align: 'center'
-    }).setOrigin(0.5).setScrollFactor(0);
+    }).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
     screenDetailText = this.add.text(400, 320, '', {
         fontFamily: '"Press Start 2P"',
@@ -281,36 +286,28 @@ function create() {
         color: '#33ff33',
         align: 'center',
         lineSpacing: 12
-    }).setOrigin(0.5).setScrollFactor(0);
+    }).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
     screenPromptText = this.add.text(400, 480, '', {
         fontFamily: '"Press Start 2P"',
         fontSize: '14px',
         color: '#33ff33',
         align: 'center'
-    }).setOrigin(0.5).setScrollFactor(0);
+    }).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
     // Create a transparent HUD camera locked at 1.0 zoom overlaying the main camera
     this.hudCamera = this.cameras.add(0, 0, 800, 600);
     this.hudCamera.setScroll(0, 0);
 
-    // Main camera ignores HUD texts
-    const hudElements = [
-        scoreText,
-        fuelText,
-        levelLivesText,
-        speedText,
-        screenTitleText,
-        screenDetailText,
-        screenPromptText
-    ];
-    this.cameras.main.ignore(hudElements);
+    // Main camera ignores HUD texts and hudTextGraphics
+    this.cameras.main.ignore([scoreText, fuelText, levelLivesText, speedText, screenTitleText, screenDetailText, screenPromptText, hudTextGraphics]);
 
-    // HUD camera ignores game world graphics objects
+    // HUD camera ignores game world graphics objects and worldTextGraphics
     this.hudCamera.ignore([
         graphics,
         landerGraphics,
-        landerGraphicsWrap
+        landerGraphicsWrap,
+        worldTextGraphics
     ]);
 
     generateNewLevel(this);
@@ -562,6 +559,7 @@ function setScreenState(newState) {
         audio.stopWarningAlarm();
     } else if (gameState === STATE_PLAYING) {
         // Active gameplay
+        levelTime = 0;
     } else if (gameState === STATE_SUCCESS) {
         screenTitleText.setText('SAFE LANDING!');
         screenPromptText.setText('NEXT LEVEL STARTING...');
@@ -600,6 +598,7 @@ function syncSlidersToLander() {
 }
 
 function resetLander() {
+    levelTime = 0;
     landerState = {
         x: 400,
         y: 80,
@@ -618,6 +617,7 @@ function resetLander() {
 }
 
 function generateNewLevel(scene) {
+    levelTime = 0;
     const activeScene = scene || currentScene || this;
     if (activeScene) {
         fuel = activeScene.nextLevelFuel !== undefined ? activeScene.nextLevelFuel : 1000;
@@ -637,7 +637,7 @@ function generateNewLevel(scene) {
                 fontFamily: '"Press Start 2P"',
                 fontSize: '8px',
                 color: '#33ff33'
-            }).setOrigin(0.5).setAlpha(0.7);
+            }).setOrigin(0.5).setAlpha(0);
             
             // Ignore pad multiplier labels on HUD camera so they scale with main camera zoom
             if (activeScene.hudCamera) {
@@ -816,6 +816,7 @@ function update(time, delta) {
 
     // 3. Game Flight State Physics Update
     if (gameState === STATE_PLAYING) {
+        levelTime += dt;
         // Read desktop cursor inputs for testing vector logic
         let desiredThrust = landerState.thrust;
 
@@ -1098,5 +1099,106 @@ function update(time, delta) {
         } else {
             speedText.setText(`H.SPEED: 0.0\nV.SPEED: 0.0\nANGLE: 0`);
         }
+    }
+
+    // Programmatic HUD stacks and Screen overlays rendering using VectorFont
+    hudTextGraphics.clear();
+    hudTextGraphics.lineStyle(1.5, 0x33ff33, 1);
+
+    // Left HUD Stack
+    const scoreStr = `SCORE: ${String(score).padStart(6, '0')}`;
+    const timeStr = `TIME : ${String(Math.floor(levelTime)).padStart(6, '0')}`;
+    const fuelStr = `FUEL : ${String(landerState ? Math.max(0, Math.round(landerState.fuel)) : 0).padStart(6, '0')}`;
+
+    window.VectorFont.drawText(hudTextGraphics, scoreStr, 20, 20, 10, 0x33ff33, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, timeStr, 20, 36, 10, 0x33ff33, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, fuelStr, 20, 52, 10, 0x33ff33, 1.5);
+
+    // Right HUD Stack
+    let altVal = 0;
+    let hSpeedVal = 0;
+    let hArrow = ' ';
+    let vSpeedVal = 0;
+    let vArrow = ' ';
+
+    if (terrain && landerState) {
+        const terrainY = window.LanderCore.getTerrainHeight(terrain, landerState.x);
+        altVal = Math.max(0, Math.round(terrainY - landerState.y));
+        hSpeedVal = Math.round(Math.abs(landerState.vx));
+        hArrow = landerState.vx < 0 ? '←' : (landerState.vx > 0 ? '→' : ' ');
+        vSpeedVal = Math.round(Math.abs(landerState.vy));
+        vArrow = landerState.vy < 0 ? '↑' : (landerState.vy > 0 ? '↓' : ' ');
+    }
+
+    const altStr = `ALTITUDE : ${String(altVal).padStart(6, '0')}`;
+    const hSpeedStr = `HORIZONTAL SPEED: ${String(hSpeedVal).padStart(6, '0')} ${hArrow}`;
+    const vSpeedStr = `VERTICAL SPEED: ${String(vSpeedVal).padStart(6, '0')} ${vArrow}`;
+
+    window.VectorFont.drawText(hudTextGraphics, altStr, 480, 20, 10, 0x33ff33, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, hSpeedStr, 480, 36, 10, 0x33ff33, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, vSpeedStr, 480, 52, 10, 0x33ff33, 1.5);
+
+    // Screen Overlays
+    if (gameState === STATE_INTRO) {
+        const titleText = 'LUNAR LANDER';
+        const titleWidth = window.VectorFont.getTextWidth(titleText, 28);
+        window.VectorFont.drawText(hudTextGraphics, titleText, 400 - titleWidth / 2, 160, 28, 0x33ff33, 1.5);
+
+        const subtitleText = '1979 ARCADE VECTOR CABINET RECREATION';
+        const subWidth = window.VectorFont.getTextWidth(subtitleText, 10);
+        window.VectorFont.drawText(hudTextGraphics, subtitleText, 400 - subWidth / 2, 210, 10, 0x33ff33, 1.5);
+
+        if (screenDetailText && screenDetailText.text) {
+            const lines = screenDetailText.text.split('\n');
+            lines.forEach((line, index) => {
+                const width = window.VectorFont.getTextWidth(line, 11);
+                window.VectorFont.drawText(hudTextGraphics, line, 400 - width / 2, 280 + index * 18, 11, 0x33ff33, 1.5);
+            });
+        }
+
+        const promptText = 'PRESS SPACE OR CLICK TO START';
+        const promptWidth = window.VectorFont.getTextWidth(promptText, 12);
+        window.VectorFont.drawText(hudTextGraphics, promptText, 400 - promptWidth / 2, 480, 12, 0x33ff33, 1.5);
+    } else if (gameState === STATE_SUCCESS || gameState === STATE_CRASHED || gameState === STATE_GAMEOVER) {
+        const titleText = screenTitleText.text;
+        if (titleText) {
+            const size = 28;
+            const width = window.VectorFont.getTextWidth(titleText, size);
+            window.VectorFont.drawText(hudTextGraphics, titleText, 400 - width / 2, 160, size, 0x33ff33, 1.5);
+        }
+
+        if (screenDetailText && screenDetailText.text) {
+            const lines = screenDetailText.text.split('\n');
+            lines.forEach((line, index) => {
+                const width = window.VectorFont.getTextWidth(line, 11);
+                window.VectorFont.drawText(hudTextGraphics, line, 400 - width / 2, 280 + index * 18, 11, 0x33ff33, 1.5);
+            });
+        }
+
+        const promptText = screenPromptText.text;
+        if (promptText) {
+            const size = 12;
+            const width = window.VectorFont.getTextWidth(promptText, size);
+            window.VectorFont.drawText(hudTextGraphics, promptText, 400 - width / 2, 480, size, 0x33ff33, 1.5);
+        }
+    }
+
+    // World coordinate landing pad multiplier labels rendering using VectorFont
+    worldTextGraphics.clear();
+    worldTextGraphics.lineStyle(1.5, 0x33ff33, 1);
+    if (terrain && gameState === STATE_PLAYING) {
+        const camX = this.cameras.main.scrollX;
+        terrain.landingPads.forEach(pad => {
+            const baseX = (pad.x1 + pad.x2) / 2;
+            let relativeX = baseX - camX;
+            relativeX = ((relativeX + 2000) % 4000 + 4000) % 4000 - 2000;
+            const wrappedLabelX = camX + relativeX;
+
+            const text = `${pad.multiplier}X`;
+            const width = window.VectorFont.getTextWidth(text, 11);
+            const x = wrappedLabelX - width / 2;
+            const y = pad.y - 18;
+            window.VectorFont.drawText(worldTextGraphics, text, x, y, 11, 0x33ff33, 1.5);
+        });
     }
 }
