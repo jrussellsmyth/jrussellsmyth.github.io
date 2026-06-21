@@ -76,6 +76,8 @@ try {
   assert.ok(cssContent.includes('.gutter'), "CSS must define .gutter class");
   assert.ok(cssContent.includes('drop-shadow'), "CSS must define drop-shadow for CRT glow");
   assert.ok(cssContent.includes('linear-gradient'), "CSS must define linear-gradient for scanlines");
+  assert.ok(cssContent.includes('radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.85) 100%)'), "CSS must define radial-gradient vignette overlay");
+  assert.ok(cssContent.includes('filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9))'), "CSS must define white vector glow drop-shadow");
 
   // Terrain generator tests
   console.log("Running Terrain generator tests...");
