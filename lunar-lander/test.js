@@ -340,6 +340,8 @@ try {
     gameContent.includes('history:') && gameContent.includes('debris.push('),
     "game.js must push debris items with a history attribute"
   );
+  assert.ok(gameContent.includes('hudTrailGraphics = this.add.graphics();'), "game.js must initialize hudTrailGraphics");
+  assert.ok(gameContent.includes('this.cameras.main.ignore(') && gameContent.includes('hudTrailGraphics'), "main camera must ignore hudTrailGraphics");
 
   // Initial Boundary Spawn checks (Task 6 verification)
   console.log("Running Initial Boundary Spawn checks...");
