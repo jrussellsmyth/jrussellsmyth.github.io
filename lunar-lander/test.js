@@ -18,7 +18,7 @@ try {
   assert.strictEqual(VectorFont.getTextWidth("", 6), 0);
   
   // Test glyph existence
-  const testChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:.-/ ←→↑↓";
+  const testChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:.-/! ←→↑↓";
   for (let char of testChars) {
     assert.ok(VectorFont.glyphs[char], `Glyph for '${char}' should exist`);
   }

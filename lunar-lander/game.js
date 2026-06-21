@@ -820,7 +820,7 @@ function drawVectorLander(g, x, y, angle, thrust, alpha = 1.0) {
 
     // Dynamic Flame vectors
     if (thrust > 0) {
-        g.lineStyle(1.5, 0xffaa00, alpha);
+        g.lineStyle(1.5, 0xffffff, alpha);
         g.beginPath();
         g.moveTo(transformX(-3, 9), transformY(-3, 9));
         const flameLen = 9 + thrust * 25 * (0.8 + Math.random() * 0.4);
@@ -1192,16 +1192,16 @@ function update(time, delta) {
 
     // Programmatic HUD stacks and Screen overlays rendering using VectorFont
     hudTextGraphics.clear();
-    hudTextGraphics.lineStyle(1.5, 0x33ff33, 1);
+    hudTextGraphics.lineStyle(1.5, 0xffffff, 1);
 
     // Left HUD Stack
     const scoreStr = `SCORE: ${String(score).padStart(6, '0')}`;
     const timeStr = `TIME : ${String(Math.floor(levelTime)).padStart(6, '0')}`;
     const fuelStr = `FUEL : ${String(landerState ? Math.max(0, Math.round(landerState.fuel)) : 0).padStart(6, '0')}`;
 
-    window.VectorFont.drawText(hudTextGraphics, scoreStr, 20, 20, 10, 0x33ff33, 1.5);
-    window.VectorFont.drawText(hudTextGraphics, timeStr, 20, 36, 10, 0x33ff33, 1.5);
-    window.VectorFont.drawText(hudTextGraphics, fuelStr, 20, 52, 10, 0x33ff33, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, scoreStr, 20, 20, 10, 0xffffff, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, timeStr, 20, 36, 10, 0xffffff, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, fuelStr, 20, 52, 10, 0xffffff, 1.5);
 
     // Right HUD Stack
     let altVal = 0;
@@ -1223,44 +1223,44 @@ function update(time, delta) {
     const hSpeedStr = `HORIZONTAL SPEED: ${String(hSpeedVal).padStart(6, '0')} ${hArrow}`;
     const vSpeedStr = `VERTICAL SPEED: ${String(vSpeedVal).padStart(6, '0')} ${vArrow}`;
 
-    window.VectorFont.drawText(hudTextGraphics, altStr, 480, 20, 10, 0x33ff33, 1.5);
-    window.VectorFont.drawText(hudTextGraphics, hSpeedStr, 480, 36, 10, 0x33ff33, 1.5);
-    window.VectorFont.drawText(hudTextGraphics, vSpeedStr, 480, 52, 10, 0x33ff33, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, altStr, 480, 20, 10, 0xffffff, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, hSpeedStr, 480, 36, 10, 0xffffff, 1.5);
+    window.VectorFont.drawText(hudTextGraphics, vSpeedStr, 480, 52, 10, 0xffffff, 1.5);
 
     // Screen Overlays
     if (gameState === STATE_INTRO) {
         const titleText = 'LUNAR LANDER';
         const titleWidth = window.VectorFont.getTextWidth(titleText, 28);
-        window.VectorFont.drawText(hudTextGraphics, titleText, 400 - titleWidth / 2, 160, 28, 0x33ff33, 1.5);
+        window.VectorFont.drawText(hudTextGraphics, titleText, 400 - titleWidth / 2, 160, 28, 0xffffff, 1.5);
 
         const subtitleText = '1979 ARCADE VECTOR CABINET RECREATION';
         const subWidth = window.VectorFont.getTextWidth(subtitleText, 10);
-        window.VectorFont.drawText(hudTextGraphics, subtitleText, 400 - subWidth / 2, 210, 10, 0x33ff33, 1.5);
+        window.VectorFont.drawText(hudTextGraphics, subtitleText, 400 - subWidth / 2, 210, 10, 0xffffff, 1.5);
 
         if (screenDetailText && screenDetailText.text) {
             const lines = screenDetailText.text.split('\n');
             lines.forEach((line, index) => {
                 const width = window.VectorFont.getTextWidth(line, 11);
-                window.VectorFont.drawText(hudTextGraphics, line, 400 - width / 2, 280 + index * 18, 11, 0x33ff33, 1.5);
+                window.VectorFont.drawText(hudTextGraphics, line, 400 - width / 2, 280 + index * 18, 11, 0xffffff, 1.5);
             });
         }
 
         const promptText = 'PRESS SPACE OR CLICK TO START';
         const promptWidth = window.VectorFont.getTextWidth(promptText, 12);
-        window.VectorFont.drawText(hudTextGraphics, promptText, 400 - promptWidth / 2, 480, 12, 0x33ff33, 1.5);
+        window.VectorFont.drawText(hudTextGraphics, promptText, 400 - promptWidth / 2, 480, 12, 0xffffff, 1.5);
     } else if (gameState === STATE_SUCCESS || gameState === STATE_CRASHED || gameState === STATE_GAMEOVER) {
         const titleText = screenTitleText.text;
         if (titleText) {
             const size = 28;
             const width = window.VectorFont.getTextWidth(titleText, size);
-            window.VectorFont.drawText(hudTextGraphics, titleText, 400 - width / 2, 160, size, 0x33ff33, 1.5);
+            window.VectorFont.drawText(hudTextGraphics, titleText, 400 - width / 2, 160, size, 0xffffff, 1.5);
         }
 
         if (screenDetailText && screenDetailText.text) {
             const lines = screenDetailText.text.split('\n');
             lines.forEach((line, index) => {
                 const width = window.VectorFont.getTextWidth(line, 11);
-                window.VectorFont.drawText(hudTextGraphics, line, 400 - width / 2, 280 + index * 18, 11, 0x33ff33, 1.5);
+                window.VectorFont.drawText(hudTextGraphics, line, 400 - width / 2, 280 + index * 18, 11, 0xffffff, 1.5);
             });
         }
 
@@ -1268,13 +1268,13 @@ function update(time, delta) {
         if (promptText) {
             const size = 12;
             const width = window.VectorFont.getTextWidth(promptText, size);
-            window.VectorFont.drawText(hudTextGraphics, promptText, 400 - width / 2, 480, size, 0x33ff33, 1.5);
+            window.VectorFont.drawText(hudTextGraphics, promptText, 400 - width / 2, 480, size, 0xffffff, 1.5);
         }
     }
 
     // World coordinate landing pad multiplier labels rendering using VectorFont
     worldTextGraphics.clear();
-    worldTextGraphics.lineStyle(1.5, 0x33ff33, 1);
+    worldTextGraphics.lineStyle(1.5, 0xffffff, 1);
     if (terrain && gameState === STATE_PLAYING) {
         const camX = this.cameras.main.scrollX;
         terrain.landingPads.forEach(pad => {
@@ -1287,7 +1287,7 @@ function update(time, delta) {
             const width = window.VectorFont.getTextWidth(text, 11);
             const x = wrappedLabelX - width / 2;
             const y = pad.y - 18;
-            window.VectorFont.drawText(worldTextGraphics, text, x, y, 11, 0x33ff33, 1.5);
+            window.VectorFont.drawText(worldTextGraphics, text, x, y, 11, 0xffffff, 1.5);
         });
     }
 }
