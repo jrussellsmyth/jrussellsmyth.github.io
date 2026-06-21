@@ -1,38 +1,29 @@
-# Task 2 Report: Camera Scrolling with 15% Screen Margins
+# Task 2: HUD Camera Separation Report
 
-## Implementation Details
+## What was Implemented
 
-I implemented horizontal camera scroll tracking with 15% screen margins wrapping at 4000px, and updated the terrain generator call to 4000px width.
+In `lunar-lander/game.js`, the HUD camera separation was successfully set up to prevent the HUD and screen overlay text elements from zooming or scrolling when the game world cameras scale or wrap:
 
-### Key Changes:
-1. **Dynamic Camera Scrolling**: Calculated dynamic scrolling boundaries inside `update` in `game.js` based on `zoom`, `W_world` (800 / zoom), and `M_world` (120 / zoom).
-2. **Horizontal Wrapping & Pinning Bug Fix**:
-   - Wrapped `screenX_world` to `[-2000, 2000]` in a 4000px world to prevent the lander from getting pinned at the left screen margin when crossing the wrapping boundary.
-   - Wrapped `this.cameras.main.scrollX` to the interval `[0, 4000]`.
-3. **Terrain Vector Double-Draw**: Multiplied the terrain drawing logic with horizontal offsets of `[-4000, 0, 4000]` so it seamlessly covers camera view wrap-around.
-4. **Landing Pad Text Labels Wrapping**:
-   - Stored the original `baseX` of pad text labels.
-   - Dynamically updated their `x` coordinate relative to the camera scroll, wrapping them in `[-2000, 2000]` around `4000px` to make sure they display at the correct wrapped position on screen.
-5. **HUD Fix**:
-   - Called `setScrollFactor(0)` on `scoreText`, `fuelText`, `levelLivesText`, `speedText`, `screenTitleText`, `screenDetailText`, and `screenPromptText` so they stay fixed in the camera viewport.
-6. **Lander Wrap & Debris Wrap**:
-   - Updated the lander double-draw wrap width from `800` to `4000`.
-   - Updated debris to wrap horizontally at `4000` and double-draw if crossing wrapping boundaries.
-7. **Starfield Expansion**:
-   - Expanded stars generation width from `800` to `4000` and increased density to 200 stars to cover the full width.
+1. **HUD Camera Setup in `create()`:**
+   - Instantiated `this.hudCamera` using `this.cameras.add(0, 0, 800, 600)` and set its scroll to `(0, 0)` so it remains fixed.
+   - Configured the main camera to ignore all HUD and screen overlay text elements (`scoreText`, `fuelText`, `levelLivesText`, `speedText`, `screenTitleText`, `screenDetailText`, `screenPromptText`) so they don't scale or move.
+   - Configured the HUD camera to ignore the game world graphics objects (`graphics`, `landerGraphics`, `landerGraphicsWrap`).
 
-## Verification & Test Results
+2. **Ignore Dynamic Pad Texts on HUD Camera:**
+   - Modified `generateNewLevel(scene)` to ignore the dynamically generated pad multiplier text labels on the HUD camera. This allows the labels to move and scale properly with the main camera.
 
-### Automated Tests
-I added a new test suite specifically verifying the camera scroll tracking math, screen boundaries (15% margins), and wrapping behavior in `test.js`.
+---
 
-Command run:
+## TDD Evidence
+
+### 1. RED (Failing Test)
+**Command Run:**
 ```bash
 node lunar-lander/test.js
 ```
 
-Output:
-```
+**Relevant Failing Output:**
+```text
 Running Core logic tests...
 Running HTML/CSS structure checks...
 Running Terrain generator tests...
@@ -42,45 +33,60 @@ Running Custom Inputs & Mirrored Mobile Gutters checks...
 Running Collision Detection tests...
 Running Touchdown Quality & Dynamic Wrapping tests...
 Running Camera scroll tracking & wrapping tests...
+Running Camera dynamic zoom checks...
+Running HUD Camera separation checks...
+TEST FAILED: AssertionError [ERR_ASSERTION]: game.js must add HUD camera
+    at Object.<anonymous> (/Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js:276:10)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/main/run_main_module:33:47)
+```
+
+**Why Failure Was Expected:**
+The assertions verifying that `this.hudCamera` was defined and that the main and HUD cameras ignored the correct elements were added to the unit test suite before implementing the logic. Since `game.js` had not yet instantiated `this.hudCamera` or ignored the objects, the assertions failed as expected.
+
+### 2. GREEN (Passing Test)
+**Command Run:**
+```bash
+node lunar-lander/test.js
+```
+
+**Relevant Passing Output:**
+```text
+Running Core logic tests...
+Running HTML/CSS structure checks...
+Running Terrain generator tests...
+Running Phaser Vector Rendering Engine checks...
+Running Web Audio Synth checks...
+Running Custom Inputs & Mirrored Mobile Gutters checks...
+Running Collision Detection tests...
+Running Touchdown Quality & Dynamic Wrapping tests...
+Running Camera scroll tracking & wrapping tests...
+Running Camera dynamic zoom checks...
+Running HUD Camera separation checks...
 ALL TESTS PASSED!
 ```
+
+---
 
 ## Files Changed
 
-- [lunar-lander/game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js)
-- [lunar-lander/test.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js)
+- [game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js): Instantiated HUD camera, set ignores for HUD texts and graphics objects in `create()`, and ignored pad texts on HUD camera in `generateNewLevel()`.
+- [test.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js): Added static check assertions for the HUD camera instantiation and ignore setups.
+
+---
 
 ## Self-Review Findings
 
-- **Completeness**: All items in the spec have been fully implemented and verified.
-- **Quality**: The math for wrapping `screenX_world` and `txt.x` handles crossing boundaries seamlessly, avoiding standard wrapping bugs (e.g. ship getting stuck at the edge).
-- **Testing**: Added rigorous unit tests in `test.js` covering margins, left/right scrolling, and wrap crossings in both directions.
+- **Completeness:** Implemented all steps from the brief. The main camera ignores all HUD texts, the HUD camera ignores game graphics, and the dynamic pad texts are ignored by the HUD camera.
+- **Quality:** Code is clear, well-structured, and aligns perfectly with existing patterns in `game.js`.
+- **Discipline:** No extraneous additions or styling modifications outside of the requested task.
+- **Testing:** The new assertions verify both structural presence and correct ignore setup for both cameras. Test suite output is clean and passing.
 
-## Task 2 Review Fixes
+---
 
-We addressed the findings from the Task 2 review by making the following changes in [lunar-lander/game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js):
-1. **Lander Wrapping Visibility**: Increased wrapping margin check from `40`/`3960` to `1600`/`2400` so that a wrapped lander copy is drawn and positioned whenever the lander is in the left/right sections of the 4000px world.
-2. **Debris Wrapping Visibility**: Draw debris wrapping copies shifted by `+4000` or `-4000` when the debris x-coordinate is `< 1600` or `> 2400`.
-3. **Stars Wrapping Visibility**: Also draw wrapped copies of the stars (fillPoint) shifted by `+4000` or `-4000` when the star x-coordinate is `< 1600` or `> 2400` to prevent blank backgrounds when the camera wraps.
-4. **Dynamic Terrain Difficulty**: Replaced the hardcoded difficulty parameter `1.0` in `generateTerrain` call with the dynamic `level` variable.
-
-### Verification of Fixes
-
-The test suite was run and verified:
-```bash
-node lunar-lander/test.js
-```
-
-Output:
-```
-Running Core logic tests...
-Running HTML/CSS structure checks...
-Running Terrain generator tests...
-Running Phaser Vector Rendering Engine checks...
-Running Web Audio Synth checks...
-Running Custom Inputs & Mirrored Mobile Gutters checks...
-Running Collision Detection tests...
-Running Touchdown Quality & Dynamic Wrapping tests...
-Running Camera scroll tracking & wrapping tests...
-ALL TESTS PASSED!
-```
+## Issues or Concerns
+None. The implementation was straightforward and successfully integrates with the existing camera scroll and zoom mechanics.
