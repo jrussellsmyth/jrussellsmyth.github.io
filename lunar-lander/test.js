@@ -169,6 +169,13 @@ try {
   assert.ok(htmlContent.includes('id="btn-right-left"'), "HTML must contain left rot-right button");
   assert.ok(htmlContent.includes('id="btn-right-right"'), "HTML must contain right rot-right button");
 
+  // Verify game.js contains layout buttons listener logic
+  assert.ok(gameContent.includes("this.input.on('wheel'"), "game.js must listen to wheel events");
+  assert.ok(gameContent.includes("btn-thrust-left"), "game.js must reference left thrust button");
+  assert.ok(gameContent.includes("btn-thrust-right"), "game.js must reference right thrust button");
+  assert.ok(gameContent.includes("btn-left-left"), "game.js must reference left rot-left button");
+  assert.ok(gameContent.includes("btn-right-left"), "game.js must reference left rot-right button");
+
   // Test collision detection logic
   console.log("Running Collision Detection tests...");
   assert.strictEqual(typeof Core.getTerrainHeight, 'function');
