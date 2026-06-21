@@ -85,8 +85,10 @@ try {
   const height = 600;
   const terrain = Core.generateTerrain(width, height, 8, 1.0);
 
-  // Assert we got valid coordinates
-  assert.ok(terrain.points.length > 50);
+  // Assert segments resolution is higher for 4000px world
+  const testTerrain4000 = Core.generateTerrain(4000, 600, 12, 1.0);
+  assert.strictEqual(testTerrain4000.points.length, 513); // 512 segments + 1 point
+  assert.strictEqual(testTerrain4000.landingPads.length, 15); // 15 landing pads total (3 per screen)
   assert.strictEqual(terrain.points[0].x, 0);
   assert.strictEqual(terrain.points[terrain.points.length - 1].x, width);
 

@@ -112,9 +112,6 @@ function calculateLandingMultiplier(padWidth) {
 }
 
 function generateTerrain(width, height, count, difficulty) {
-  // Support both signatures:
-  // 1. generateTerrain(width, height, count, difficulty)
-  // 2. generateTerrain(width, height, difficulty)
   let actualDifficulty = 1.0;
   if (difficulty !== undefined) {
     actualDifficulty = difficulty;
@@ -126,7 +123,7 @@ function generateTerrain(width, height, count, difficulty) {
   const landingPads = [];
   
   // Seed points evenly across width
-  const segments = 128;
+  const segments = width >= 4000 ? 512 : 128;
   const dx = width / segments;
   const heights = new Array(segments + 1);
 
@@ -152,15 +149,26 @@ function generateTerrain(width, height, count, difficulty) {
   const roughnessCap = Math.min(1.8, 1.2 + actualDifficulty * 0.08);
   displace(0, segments, roughnessCap);
 
-  // Inject flat landing pads
-  const padCount = 3;
+  // Inject flat landing pads (3 pads per 800px screen width)
+  const padCount = Math.max(3, Math.floor((width / 800) * 3));
   const scale = width / 4000;
-  const padWidths = [250, 120, 70].map(w => w * scale); // Wide (2x), Medium (5x), Narrow (10x)
+  const unscaledWidths = [250, 120, 70];
+  const padWidths = [];
+  for (let i = 0; i < padCount; i++) {
+    const unscaledW = unscaledWidths[i % unscaledWidths.length];
+    padWidths.push({
+      unscaled: unscaledW,
+      scaled: unscaledW * scale
+    });
+  }
   const occupied = new Array(segments + 1).fill(false);
   
+  // Enforce checkBuffer = 5 to accommodate taper width N = 4 transitions
+  const checkBuffer = 5;
+
   for (let i = 0; i < padCount; i++) {
-    const pWidth = padWidths[i];
-    const pMult = calculateLandingMultiplier(pWidth / scale);
+    const pWidth = padWidths[i].scaled;
+    const pMult = calculateLandingMultiplier(padWidths[i].unscaled);
     const maxSegmentOffset = Math.floor(pWidth / dx);
     
     let startSeg = 0;
@@ -173,7 +181,7 @@ function generateTerrain(width, height, count, difficulty) {
       endSeg = startSeg + maxSegmentOffset;
       
       overlap = false;
-      for (let s = startSeg - 6; s <= endSeg + 6; s++) {
+      for (let s = startSeg - checkBuffer; s <= endSeg + checkBuffer; s++) {
         if (s >= 0 && s <= segments && occupied[s]) {
           overlap = true;
           break;
@@ -182,8 +190,8 @@ function generateTerrain(width, height, count, difficulty) {
       attempts++;
     }
     
-    // Mark range as occupied (with buffers to prevent overlap of transitions)
-    for (let s = startSeg - 5; s <= endSeg + 5; s++) {
+    // Mark range as occupied
+    for (let s = startSeg - checkBuffer + 1; s <= endSeg + checkBuffer - 1; s++) {
       if (s >= 0 && s <= segments) {
         occupied[s] = true;
       }
@@ -199,7 +207,7 @@ function generateTerrain(width, height, count, difficulty) {
     for (let s = startSeg; s <= endSeg; s++) {
       heights[s] = padY;
     }
-
+ 
     // Taper left transition over N = 4 segments
     const N = 4;
     const leftBoundarySeg = startSeg - N - 1;
