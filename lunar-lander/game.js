@@ -803,11 +803,18 @@ function update(time, delta) {
             if (leftThrustSlider) leftThrustSlider.value = 100;
             if (rightThrustSlider) rightThrustSlider.value = 100;
             this.wasKeyboardThrusting = true;
-        } else if (this.wasKeyboardThrusting || window.isThrustingButtonActive === false) {
-            // Read from slider if not active keyboard/button thrusting
+        } else if (this.wasKeyboardThrusting) {
+            // Keyboard/button was released: snap thrust slider and desired thrust back to 0
+            desiredThrust = 0;
+            const leftThrustSlider = document.getElementById('thrust-left');
+            const rightThrustSlider = document.getElementById('thrust-right');
+            if (leftThrustSlider) leftThrustSlider.value = 0;
+            if (rightThrustSlider) rightThrustSlider.value = 0;
+            this.wasKeyboardThrusting = false;
+        } else {
+            // Read from slider/throttle if not active keyboard/button thrusting
             const leftThrustSlider = document.getElementById('thrust-left');
             desiredThrust = leftThrustSlider ? parseFloat(leftThrustSlider.value) / 100 : 0;
-            this.wasKeyboardThrusting = false;
         }
 
         // Steer angle blending (Keyboard arrow / WASD or mobile buttons override touch steer slider)
