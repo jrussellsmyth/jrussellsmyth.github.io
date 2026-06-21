@@ -5,6 +5,24 @@ console.log("Running Core logic tests...");
 
 // Test landing rules
 try {
+  // VectorFont checks (Task 1 verification)
+  console.log("Running VectorFont checks...");
+  const VectorFont = require('./vector-font.js');
+  assert.strictEqual(typeof VectorFont, 'object', "VectorFont should be exported as an object");
+  assert.strictEqual(typeof VectorFont.drawText, 'function', "VectorFont.drawText should be a function");
+  assert.strictEqual(typeof VectorFont.getTextWidth, 'function', "VectorFont.getTextWidth should be a function");
+  
+  // Test width calculations
+  assert.strictEqual(VectorFont.getTextWidth("HELLO", 12), 60);
+  assert.strictEqual(VectorFont.getTextWidth("A", 6), 6);
+  assert.strictEqual(VectorFont.getTextWidth("", 6), 0);
+  
+  // Test glyph existence
+  const testChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:.-/ ←→↑↓";
+  for (let char of testChars) {
+    assert.ok(VectorFont.glyphs[char], `Glyph for '${char}' should exist`);
+  }
+
   assert.strictEqual(typeof Core.checkLandingCondition, 'function');
   assert.strictEqual(typeof Core.updatePhysicsState, 'function');
   assert.strictEqual(typeof Core.calculateLandingMultiplier, 'function');
