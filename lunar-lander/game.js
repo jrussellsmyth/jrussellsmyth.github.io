@@ -205,6 +205,7 @@ const STATE_GAMEOVER = 'GAMEOVER';
 
 let gameState = STATE_INTRO;
 let debris = [];
+let landerTrail = [];
 
 // Safe parameters
 let score = 0;
@@ -704,16 +705,50 @@ function triggerExplosion() {
             lx1: -dx / 2,
             ly1: -dy / 2,
             lx2: dx / 2,
-            ly2: dy / 2
+            ly2: dy / 2,
+            history: []
         });
     });
 }
 
 function updateAndDrawDebris(g, dt) {
-    g.lineStyle(2, 0xffffff, 1);
     const gravity = 25.0;
     
     debris.forEach(d => {
+        // Track debris history (max 4 segments) before updating physics position
+        if (!d.history) {
+            d.history = [];
+        }
+        d.history.push({ x: d.x, y: d.y, angle: d.angle });
+        if (d.history.length > 4) {
+            d.history.shift();
+        }
+
+        // Draw historical segments with decaying alphas
+        d.history.forEach((h, index) => {
+            const alpha = ((index + 1) / (d.history.length + 1)) * 0.45;
+            g.lineStyle(2, 0xffffff, alpha);
+
+            const rad = (h.angle * Math.PI) / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+
+            const x1 = h.x + d.lx1 * cos - d.ly1 * sin;
+            const y1 = h.y + d.lx1 * sin + d.ly1 * cos;
+            const x2 = h.x + d.lx2 * cos - d.ly2 * sin;
+            const y2 = h.y + d.lx2 * sin + d.ly2 * cos;
+
+            g.lineBetween(x1, y1, x2, y2);
+
+            // Double-draw debris if near horizontal wrapping borders
+            if (h.x < 1600) {
+                g.lineBetween(x1 + 4000, y1, x2 + 4000, y2);
+            } else if (h.x > 2400) {
+                g.lineBetween(x1 - 4000, y1, x2 - 4000, y2);
+            }
+        });
+
+        // Update physics positions
         d.vy += gravity * dt;
         d.x += d.vx * dt;
         d.y += d.vy * dt;
@@ -721,6 +756,9 @@ function updateAndDrawDebris(g, dt) {
 
         // Wrap debris horizontally at 4000
         d.x = (d.x % 4000 + 4000) % 4000;
+
+        // Draw primary segment
+        g.lineStyle(2, 0xffffff, 1.0);
 
         const rad = (d.angle * Math.PI) / 180;
         const cos = Math.cos(rad);
@@ -742,45 +780,69 @@ function updateAndDrawDebris(g, dt) {
     });
 }
 
-function drawVectorLander(g, x, y, angle, thrust) {
+function drawVectorLander(g, x, y, angle, thrust, alpha = 1.0) {
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const transformX = (px, py) => x + px * cos - py * sin;
+    const transformY = (px, py) => y + px * sin + py * cos;
+
     // Neon Vector line style
-    g.lineStyle(2, 0xffffff, 1);
+    g.lineStyle(2, 0xffffff, alpha);
 
     // Lander Capsule body
     g.beginPath();
-    g.moveTo(-10, -5);
-    g.lineTo(10, -5);
-    g.lineTo(12, 5);
-    g.lineTo(-12, 5);
+    g.moveTo(transformX(-10, -5), transformY(-10, -5));
+    g.lineTo(transformX(10, -5), transformY(10, -5));
+    g.lineTo(transformX(12, 5), transformY(12, 5));
+    g.lineTo(transformX(-12, 5), transformY(-12, 5));
     g.closePath();
     g.strokePath();
 
     // Lander Legs
-    g.lineBetween(-12, 5, -16, 15);
-    g.lineBetween(12, 5, 16, 15);
+    g.lineBetween(transformX(-12, 5), transformY(-12, 5), transformX(-16, 15), transformY(-16, 15));
+    g.lineBetween(transformX(12, 5), transformY(12, 5), transformX(16, 15), transformY(16, 15));
     
     // Lander Footpads
-    g.lineBetween(-18, 15, -14, 15);
-    g.lineBetween(14, 15, 18, 15);
+    g.lineBetween(transformX(-18, 15), transformY(-18, 15), transformX(-14, 15), transformY(-14, 15));
+    g.lineBetween(transformX(14, 15), transformY(14, 15), transformX(18, 15), transformY(18, 15));
 
     // Thrust Thruster nozzle
-    g.lineBetween(-4, 5, -2, 9);
-    g.lineBetween(4, 5, 2, 9);
-    g.lineBetween(-2, 9, 2, 9);
+    g.lineBetween(transformX(-4, 5), transformY(-4, 5), transformX(-2, 9), transformY(-2, 9));
+    g.lineBetween(transformX(4, 5), transformY(4, 5), transformX(2, 9), transformY(2, 9));
+    g.lineBetween(transformX(-2, 9), transformY(-2, 9), transformX(2, 9), transformY(2, 9));
 
     // Dynamic Flame vectors
     if (thrust > 0) {
-        g.lineStyle(1.5, 0xffaa00, 1);
+        g.lineStyle(1.5, 0xffaa00, alpha);
         g.beginPath();
-        g.moveTo(-3, 9);
-        g.lineTo(0, 9 + thrust * 25 * (0.8 + Math.random() * 0.4));
-        g.lineTo(3, 9);
+        g.moveTo(transformX(-3, 9), transformY(-3, 9));
+        const flameLen = 9 + thrust * 25 * (0.8 + Math.random() * 0.4);
+        g.lineTo(transformX(0, flameLen), transformY(0, flameLen));
+        g.lineTo(transformX(3, 9), transformY(3, 9));
         g.strokePath();
     }
 }
 
 function update(time, delta) {
     const dt = delta / 1000;
+
+    // Track lander historical trail coordinates
+    if (gameState === STATE_PLAYING || gameState === 'SUCCESS') {
+        landerTrail.push({
+            x: landerState.x,
+            y: landerState.y,
+            angle: landerState.angle,
+            thrust: landerState.thrust
+        });
+        if (landerTrail.length > 4) {
+            landerTrail.shift();
+        }
+    } else {
+        landerTrail = [];
+    }
+
     graphics.clear();
 
     // 1. Draw Starfield in a single batch with static alpha
@@ -1017,50 +1079,72 @@ function update(time, delta) {
   
           if (gameState === STATE_PLAYING) {
               landerGraphics.clear();
-              drawVectorLander(landerGraphics, 0, 0, 0, landerState.thrust);
-              landerGraphics.setPosition(landerState.x, landerState.y);
-              landerGraphics.setAngle(landerState.angle);
-
-              // Render wrapping double-draw
               landerGraphicsWrap.clear();
+              landerGraphics.setPosition(0, 0);
+              landerGraphics.setAngle(0);
+              landerGraphicsWrap.setPosition(0, 0);
+              landerGraphicsWrap.setAngle(0);
+
+              let hasWrap = false;
+              // Draw historical frames
+              landerTrail.forEach((t, i) => {
+                  const alpha = 0.1 * (i + 1);
+                  drawVectorLander(landerGraphics, t.x, t.y, t.angle, t.thrust, alpha);
+                  if (t.x < 1600) {
+                      drawVectorLander(landerGraphicsWrap, t.x + 4000, t.y, t.angle, t.thrust, alpha);
+                      hasWrap = true;
+                  } else if (t.x > 2400) {
+                      drawVectorLander(landerGraphicsWrap, t.x - 4000, t.y, t.angle, t.thrust, alpha);
+                      hasWrap = true;
+                  }
+              });
+
+              // Draw primary lander
+              drawVectorLander(landerGraphics, landerState.x, landerState.y, landerState.angle, landerState.thrust, 1.0);
               if (landerState.x < 1600) {
-                  landerGraphicsWrap.setVisible(true);
-                  drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
-                  landerGraphicsWrap.setPosition(landerState.x + 4000, landerState.y);
-                  landerGraphicsWrap.setAngle(landerState.angle);
+                  drawVectorLander(landerGraphicsWrap, landerState.x + 4000, landerState.y, landerState.angle, landerState.thrust, 1.0);
+                  hasWrap = true;
               } else if (landerState.x > 2400) {
-                  landerGraphicsWrap.setVisible(true);
-                  drawVectorLander(landerGraphicsWrap, 0, 0, 0, landerState.thrust);
-                  landerGraphicsWrap.setPosition(landerState.x - 4000, landerState.y);
-                  landerGraphicsWrap.setAngle(landerState.angle);
-              } else {
-                  landerGraphicsWrap.setVisible(false);
+                  drawVectorLander(landerGraphicsWrap, landerState.x - 4000, landerState.y, landerState.angle, landerState.thrust, 1.0);
+                  hasWrap = true;
               }
+              landerGraphicsWrap.setVisible(hasWrap);
           }
       } else if (gameState === STATE_SUCCESS) {
           audio.setThrust(0);
           audio.stopWarningAlarm();
           // Keep ship drawn frozen at its landed spot
           landerGraphics.clear();
-          drawVectorLander(landerGraphics, 0, 0, 0, 0);
-          landerGraphics.setPosition(landerState.x, landerState.y);
-          landerGraphics.setAngle(landerState.angle);
-
-          // Render wrapping double-draw frozen at landed spot
           landerGraphicsWrap.clear();
+          landerGraphics.setPosition(0, 0);
+          landerGraphics.setAngle(0);
+          landerGraphicsWrap.setPosition(0, 0);
+          landerGraphicsWrap.setAngle(0);
+
+          let hasWrap = false;
+          // Draw historical frames
+          landerTrail.forEach((t, i) => {
+              const alpha = 0.1 * (i + 1);
+              drawVectorLander(landerGraphics, t.x, t.y, t.angle, t.thrust, alpha);
+              if (t.x < 1600) {
+                  drawVectorLander(landerGraphicsWrap, t.x + 4000, t.y, t.angle, t.thrust, alpha);
+                  hasWrap = true;
+              } else if (t.x > 2400) {
+                  drawVectorLander(landerGraphicsWrap, t.x - 4000, t.y, t.angle, t.thrust, alpha);
+                  hasWrap = true;
+              }
+          });
+
+          // Draw primary lander
+          drawVectorLander(landerGraphics, landerState.x, landerState.y, landerState.angle, 0, 1.0);
           if (landerState.x < 1600) {
-              landerGraphicsWrap.setVisible(true);
-              drawVectorLander(landerGraphicsWrap, 0, 0, 0, 0);
-              landerGraphicsWrap.setPosition(landerState.x + 4000, landerState.y);
-              landerGraphicsWrap.setAngle(landerState.angle);
+              drawVectorLander(landerGraphicsWrap, landerState.x + 4000, landerState.y, landerState.angle, 0, 1.0);
+              hasWrap = true;
           } else if (landerState.x > 2400) {
-              landerGraphicsWrap.setVisible(true);
-              drawVectorLander(landerGraphicsWrap, 0, 0, 0, 0);
-              landerGraphicsWrap.setPosition(landerState.x - 4000, landerState.y);
-              landerGraphicsWrap.setAngle(landerState.angle);
-          } else {
-              landerGraphicsWrap.setVisible(false);
+              drawVectorLander(landerGraphicsWrap, landerState.x - 4000, landerState.y, landerState.angle, 0, 1.0);
+              hasWrap = true;
           }
+          landerGraphicsWrap.setVisible(hasWrap);
       } else if (gameState === STATE_CRASHED) {
           audio.setThrust(0);
           audio.stopWarningAlarm();

@@ -112,7 +112,7 @@ try {
   const updateIndex = gameContentForTask3.indexOf('function update(');
   const successIndex = gameContentForTask3.indexOf('gameState === STATE_SUCCESS', updateIndex);
   assert.ok(successIndex !== -1, "game.js must define STATE_SUCCESS handling");
-  const successBlock = gameContentForTask3.slice(successIndex, successIndex + 1000);
+  const successBlock = gameContentForTask3.slice(successIndex, successIndex + 2500);
   assert.ok(successBlock.includes('landerGraphicsWrap.clear()'), "game.js must clear wrapping lander graphic in success state");
   assert.ok(successBlock.includes('landerState.x < 1600'), "game.js must double-draw near left edge in success state");
   assert.ok(successBlock.includes('landerState.x > 2400'), "game.js must double-draw near right edge in success state");
@@ -319,6 +319,19 @@ try {
   assert.ok(gameContent.includes('hudTextGraphics = this.add.graphics();'), "game.js must initialize hudTextGraphics");
   assert.ok(gameContent.includes('worldTextGraphics.clear()'), "game.js must clear worldTextGraphics");
   assert.ok(gameContent.includes('hudTextGraphics.clear()'), "game.js must clear hudTextGraphics");
+
+  // Phosphor Trails & Decay Motion checks (Task 5 verification)
+  console.log("Running Phosphor Trails & Decay Motion checks...");
+  assert.ok(
+    gameContent.includes('let landerTrail') || 
+    gameContent.includes('var landerTrail') ||
+    gameContent.match(/(let|var|const)\s+landerTrail\s*=\s*\[\]/),
+    "game.js must define landerTrail variable"
+  );
+  assert.ok(
+    gameContent.includes('history:') && gameContent.includes('debris.push('),
+    "game.js must push debris items with a history attribute"
+  );
 
   console.log("ALL TESTS PASSED!");
 } catch (err) {
