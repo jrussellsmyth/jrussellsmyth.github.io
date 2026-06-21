@@ -238,6 +238,11 @@ function create() {
         left: Phaser.Input.Keyboard.KeyCodes.A,
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
+
+    this.wasKeyboardThrusting = false;
+    window.isThrustingButtonActive = false;
+    window.isLeftButtonActive = false;
+    window.isRightButtonActive = false;
     
     // Populate Vector Starfield
     for (let i = 0; i < 30; i++) {
@@ -811,11 +816,18 @@ function update(time, delta) {
     if (gameState === STATE_PLAYING) {
         levelTime += dt;
         // Check keyboard or mobile button input for thrust
+        let desiredThrust = landerState.thrust;
         const isThrusting = (cursorKeys.up && cursorKeys.up.isDown) || 
                             (this.wasd && this.wasd.up && this.wasd.up.isDown) ||
                             window.isThrustingButtonActive;
         
-        let desiredThrust = isThrusting ? 1.0 : 0.0;
+        if (isThrusting) {
+            desiredThrust = 1.0;
+            this.wasKeyboardThrusting = true;
+        } else if (this.wasKeyboardThrusting) {
+            desiredThrust = 0.0;
+            this.wasKeyboardThrusting = false;
+        }
 
         // Steer angle blending (Keyboard arrow / WASD or mobile buttons)
         if ((cursorKeys.left && cursorKeys.left.isDown) || 

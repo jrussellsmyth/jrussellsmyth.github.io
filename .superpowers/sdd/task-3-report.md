@@ -1,33 +1,48 @@
-# Task 3: Sparse Stars & White Vector Graphics Rendering - Implementation Report
+# Task 3: Dual-Gutter Button Input Handlers Mapping & Physics simplification Report
 
-## Summary of Changes
+## What Was Implemented
 
-### 1. Reduced Starfield Density
-- Modified `lunar-lander/game.js` in `create()` to change the starfield populate loop limit from `200` to `30` stars.
-- Adjusted star rendering in `update()` to use a faint white alpha (`0.4` instead of `0.7`) via `graphics.fillStyle(0xffffff, 0.4)`.
-- Verified that all 30 stars continue to render as single-pixel points via `graphics.fillPoint(s.x, s.y, 1)` and maintain their horizontal wrapping behavior.
+1. **Test Constraints Update**:
+   - Modified [test.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js) to verify that `game.js` contains references to the new buttons (`btn-thrust-left`, `btn-thrust-right`, `btn-left-left`, `btn-right-left`) and the mouse wheel event listener (`this.input.on('wheel'`).
 
-### 2. Transitioned Colors to Vector White
-- Replaced all hex numeric literals `0x33ff33` (previously used for vector styling) inside the graphics rendering paths of `lunar-lander/game.js` with `0xffffff`.
-- Updated:
-  - `drawVectorLander()` lineStyle to `0xffffff`.
-  - `updateAndDrawDebris()` lineStyle to `0xffffff`.
-  - `update()` terrain lineStyle to `0xffffff`.
-  - `update()` landing pad multiplier lines to `0xffffff`.
+2. **Landscape Button Mappings**:
+   - Replaced old mobile sliders and portrait control event listeners in [game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js).
+   - Created a clean `bindButton` utility to register event handlers (`mousedown`, `touchstart`, `mouseup`, `touchend`, `touchcancel`, `mouseleave`) to handle both touch and mouse events seamlessly, mapping them to state variables (`isThrustingButtonActive`, `isLeftButtonActive`, `isRightButtonActive`).
 
-### 3. Sharp Terrain Line Segment Verification
-- Verified that terrain points are connected via standard line paths (`lineTo`) using `graphics.strokePath()`, ensuring sharp vector segments.
+3. **Physics Simplification**:
+   - Cleaned up the Phaser update loop to remove old slider values syncing, snapping logic, and steer rate overrides in [game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js).
+   - Simplified the inputs logic to directly query keyboard keys (`cursorKeys`, `this.wasd`) and mobile buttons (`window.isThrustingButtonActive`, `window.isLeftButtonActive`, `window.isRightButtonActive`) to update lander thrust and steering angle rate.
 
----
+## Files Changed
 
-## Test Verification
+- [lunar-lander/game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js)
+- [lunar-lander/test.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js)
 
-Command run:
-```bash
-node lunar-lander/test.js
+## TDD Evidence
+
+### RED Phase (Failing Output)
+Run command: `node lunar-lander/test.js`
+Expected failure since `game.js` did not yet reference the new buttons.
+
+```
+Running Core logic tests...
+Running VectorFont checks...
+Running HTML/CSS structure checks...
+Running Terrain generator tests...
+Running Phaser Vector Rendering Engine checks...
+Running Web Audio Synth checks...
+Running Custom Inputs & Mirrored Mobile Gutters checks...
+TEST FAILED: AssertionError [ERR_ASSERTION]: game.js must reference left thrust button
+    at Object.<anonymous> (/Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js:174:10)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    ...
 ```
 
-Output:
+### GREEN Phase (Passing Output)
+Run command: `node lunar-lander/test.js`
+Output after correct implementation of new button mappings and physics updates:
+
 ```
 Running Core logic tests...
 Running VectorFont checks...
@@ -41,7 +56,46 @@ Running Touchdown Quality & Dynamic Wrapping tests...
 Running Camera scroll tracking & wrapping tests...
 Running Camera dynamic zoom checks...
 Running HUD Camera separation checks...
+Running VectorFont HUD layout checks...
+Running Phosphor Trails & Decay Motion checks...
+Running Initial Boundary Spawn checks...
 ALL TESTS PASSED!
 ```
 
-Status: **DONE**
+## Self-Review
+
+- **Completeness**: All required elements from Task 3 brief are implemented.
+- **Quality**: The `bindButton` utility simplifies code structure and handles touch sets dynamically for multiple active inputs.
+- **Discipline**: Strictly limited edits to Task 3 targets, avoiding overbuilding.
+- **Testing**: Tests successfully executed and verified both failure (RED) and pass (GREEN) states.
+
+## Task 3 Review Fixes (June 21, 2026)
+
+### Findings Addressed
+1. **Lander Thrust State Latch**:
+   - Changed the thrust input logic in `game.js` update loop to use a state latch (`this.wasKeyboardThrusting`). This preserves any fine-grained modifications to `landerState.thrust` (e.g., from mouse wheel scroll delta inputs) when keyboard inputs are not active.
+2. **Explicit Window Properties Initialization**:
+   - Explicitly initialized the active button states on the `window` object (`window.isThrustingButtonActive`, `window.isLeftButtonActive`, `window.isRightButtonActive`) to `false` in the `create()` function of `game.js`.
+
+### Verification & Testing
+- Ran the test suite command: `node lunar-lander/test.js`
+- Verification result:
+  ```
+  Running Core logic tests...
+  Running VectorFont checks...
+  Running HTML/CSS structure checks...
+  Running Terrain generator tests...
+  Running Phaser Vector Rendering Engine checks...
+  Running Web Audio Synth checks...
+  Running Custom Inputs & Mirrored Mobile Gutters checks...
+  Running Collision Detection tests...
+  Running Touchdown Quality & Dynamic Wrapping tests...
+  Running Camera scroll tracking & wrapping tests...
+  Running Camera dynamic zoom checks...
+  Running HUD Camera separation checks...
+  Running VectorFont HUD layout checks...
+  Running Phosphor Trails & Decay Motion checks...
+  Running Initial Boundary Spawn checks...
+  ALL TESTS PASSED!
+  ```
+

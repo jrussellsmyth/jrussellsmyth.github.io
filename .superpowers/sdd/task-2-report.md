@@ -1,40 +1,51 @@
-# Task 2: Page Layout & CSS CRT Vignette Styling - Implementation Report
+# Task 2: Mobile Warning, Gutter Buttons HTML, and CSS Styling Report
 
-## Modifications
+## Implementation Details
 
-### 1. `lunar-lander/style.css`
-- Updated the main text/vector color of the page `body` to `#ffffff`.
-- Removed the double-green border and green box-shadow from `#game-wrapper`.
-- Changed the canvas display filter in `#game-container canvas` from a single-pass green glow to a dual-pass white vector glow:
-  ```css
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.45));
-  ```
-- Simulated the CRT curved tube screen surface glass curvature by adding a vignette radial-gradient overlay inside `#game-container::before`:
-  ```css
-  #game-container::before {
-      content: " ";
-      display: block;
-      position: absolute;
-      top: 0; left: 0; bottom: 0; right: 0;
-      background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.85) 100%);
-      z-index: 15;
-      pointer-events: none;
-  }
-  ```
-- Shifted all other green accents (`#33ff33` and `rgba(51, 255, 51, ...)`) to white versions to achieve a fully consistent white-vector arcade visual design:
-  - Mobile control button `.control-btn` border to white (`border: 2px solid #ffffff`), font color to white (`color: #ffffff`), and adjusted shadows and active state gradients.
-  - Mirrored gutters (`.gutter` and `.right-gutter`) and sliders (`.slider` borders and thumbs) styles shifted to white.
-  - Landscape warnings (`#landscape-warning`) text and double borders shifted to white.
+I successfully completed Task 2 by performing the following actions:
+1. **Removed Sliders**: Removed the old vertical and horizontal sliders from both the left and right gutters in `index.html`.
+2. **Added Landscape Gutters Touch Buttons**: Added the bottom-aligned controls container inside left and right HTML gutters containing buttons:
+   - Left gutter: `btn-thrust-left` (THRUST), `btn-left-left` (ROT L), `btn-right-left` (ROT R)
+   - Right gutter: `btn-thrust-right` (THRUST), `btn-left-right` (ROT L), `btn-right-right` (ROT R)
+3. **Landscape Warn Overlays**: Updated the warning overlay in `index.html` to ask users to rotate to landscape orientation: "PLEASE ROTATE YOUR DEVICE TO LANDSCAPE MODE TO PLAY."
+4. **Style Overrides**: Updated `style.css` to:
+   - Position these control buttons inside the bottom 1/3 of the gutters.
+   - Hide the gutters on desktop and show them on mobile coarse (`pointer: coarse`).
+   - Trigger the `#landscape-warning` overlay only in portrait mode on mobile (`@media (pointer: coarse) and (orientation: portrait)`).
+   - Set up responsive flex layout styles for mobile landscape.
 
-### 2. `lunar-lander/test.js`
-- Added structural CSS assertions:
-  - Checked that `radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.85) 100%)` exists in the stylesheet.
-  - Checked that `filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9))` exists in the stylesheet.
+## Files Changed
 
-## Test Verification Output
+- [index.html](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/index.html)
+- [style.css](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/style.css)
+- [test.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js)
 
-Command run: `node lunar-lander/test.js`
-Output:
+## TDD Evidence
+
+### RED State (Before implementation)
+
+- **Command Run**: `node lunar-lander/test.js`
+- **Why it failed**: The test failed because the HTML assertions looked for the new button IDs (`btn-thrust-left`, etc.) which had not yet been added to `index.html`.
+- **Failing Output**:
+```
+Running Core logic tests...
+Running VectorFont checks...
+Running HTML/CSS structure checks...
+Running Terrain generator tests...
+Running Phaser Vector Rendering Engine checks...
+Running Web Audio Synth checks...
+Running Custom Inputs & Mirrored Mobile Gutters checks...
+TEST FAILED: AssertionError [ERR_ASSERTION]: HTML must contain left thrust button
+    at Object.<anonymous> (/Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js:165:10)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    ...
+```
+
+### GREEN State (After implementation)
+
+- **Command Run**: `node lunar-lander/test.js`
+- **Passing Output**:
 ```
 Running Core logic tests...
 Running VectorFont checks...
@@ -48,5 +59,14 @@ Running Touchdown Quality & Dynamic Wrapping tests...
 Running Camera scroll tracking & wrapping tests...
 Running Camera dynamic zoom checks...
 Running HUD Camera separation checks...
+Running VectorFont HUD layout checks...
+Running Phosphor Trails & Decay Motion checks...
+Running Initial Boundary Spawn checks...
 ALL TESTS PASSED!
 ```
+
+## Self-Review Findings
+- Verified HTML matches structure exactly.
+- Verified CSS rules correctly reference new class names and display rules.
+- Retained base CSS styling for `#landscape-warning` element while modifying layout rules.
+- Checked that tests are pristine and passing.
