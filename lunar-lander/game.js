@@ -600,6 +600,8 @@ function syncSlidersToLander() {
 
 function resetLander() {
     levelTime = 0;
+    landerTrail = [];
+    debris = [];
     landerState = {
         x: 400,
         y: 80,
@@ -829,7 +831,7 @@ function update(time, delta) {
     const dt = delta / 1000;
 
     // Track lander historical trail coordinates
-    if (gameState === STATE_PLAYING || gameState === 'SUCCESS') {
+    if (gameState === STATE_PLAYING || gameState === STATE_SUCCESS) {
         landerTrail.push({
             x: landerState.x,
             y: landerState.y,

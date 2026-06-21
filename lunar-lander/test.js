@@ -110,7 +110,18 @@ try {
   const gameContentForTask3 = fs.readFileSync(gamePathForV, 'utf8');
   assert.ok(gameContentForTask3.includes('landerGraphicsWrap.clear()'), "game.js must clear wrapping lander graphics");
   const updateIndex = gameContentForTask3.indexOf('function update(');
-  const successIndex = gameContentForTask3.indexOf('gameState === STATE_SUCCESS', updateIndex);
+  let successIndex = -1;
+  let searchPos = updateIndex;
+  while (true) {
+    const idx = gameContentForTask3.indexOf('gameState === STATE_SUCCESS', searchPos);
+    if (idx === -1) break;
+    const block = gameContentForTask3.slice(idx, idx + 2500);
+    if (block.includes('landerGraphicsWrap.clear()')) {
+      successIndex = idx;
+      break;
+    }
+    searchPos = idx + 1;
+  }
   assert.ok(successIndex !== -1, "game.js must define STATE_SUCCESS handling");
   const successBlock = gameContentForTask3.slice(successIndex, successIndex + 2500);
   assert.ok(successBlock.includes('landerGraphicsWrap.clear()'), "game.js must clear wrapping lander graphic in success state");
