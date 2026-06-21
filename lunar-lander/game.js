@@ -234,7 +234,7 @@ function create() {
     });
     
     // Populate Vector Starfield
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 30; i++) {
         stars.push({
             x: Math.random() * 4000,
             y: Math.random() * 450,
@@ -710,7 +710,7 @@ function triggerExplosion() {
 }
 
 function updateAndDrawDebris(g, dt) {
-    g.lineStyle(2, 0x33ff33, 1);
+    g.lineStyle(2, 0xffffff, 1);
     const gravity = 25.0;
     
     debris.forEach(d => {
@@ -744,7 +744,7 @@ function updateAndDrawDebris(g, dt) {
 
 function drawVectorLander(g, x, y, angle, thrust) {
     // Neon Vector line style
-    g.lineStyle(2, 0x33ff33, 1);
+    g.lineStyle(2, 0xffffff, 1);
 
     // Lander Capsule body
     g.beginPath();
@@ -784,7 +784,7 @@ function update(time, delta) {
     graphics.clear();
 
     // 1. Draw Starfield in a single batch with static alpha
-    graphics.fillStyle(0xffffff, 0.7);
+    graphics.fillStyle(0xffffff, 0.4);
     stars.forEach(s => {
         graphics.fillPoint(s.x, s.y, 1);
         if (s.x < 1600) {
@@ -798,7 +798,7 @@ function update(time, delta) {
     if (terrain) {
         const offsets = [0, 4000, -4000];
         offsets.forEach(offset => {
-            graphics.lineStyle(2, 0x33ff33, 1);
+            graphics.lineStyle(2, 0xffffff, 1);
             graphics.beginPath();
             graphics.moveTo(terrain.points[0].x + offset, terrain.points[0].y);
             for (let i = 1; i < terrain.points.length; i++) {
@@ -808,7 +808,7 @@ function update(time, delta) {
 
             // Draw Landing Pads Multipliers
             terrain.landingPads.forEach(pad => {
-                graphics.lineStyle(3, 0x33ff33, 1);
+                graphics.lineStyle(3, 0xffffff, 1);
                 graphics.lineBetween(pad.x1 + offset, pad.y, pad.x2 + offset, pad.y);
             });
         });
