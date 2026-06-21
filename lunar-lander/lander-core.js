@@ -156,12 +156,11 @@ function generateTerrain(width, height, count, difficulty) {
   const padCount = 3;
   const scale = width / 4000;
   const padWidths = [250, 120, 70].map(w => w * scale); // Wide (2x), Medium (5x), Narrow (10x)
-  const padMultipliers = [2, 5, 10];
   const occupied = new Array(segments + 1).fill(false);
   
   for (let i = 0; i < padCount; i++) {
     const pWidth = padWidths[i];
-    const pMult = padMultipliers[i];
+    const pMult = calculateLandingMultiplier(pWidth / scale);
     const maxSegmentOffset = Math.floor(pWidth / dx);
     
     let startSeg = 0;

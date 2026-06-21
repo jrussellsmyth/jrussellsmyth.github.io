@@ -290,8 +290,8 @@ function create() {
         align: 'center'
     }).setOrigin(0.5).setScrollFactor(0);
 
-    resetLander();
     generateNewLevel(this);
+    resetLander();
     setScreenState(STATE_INTRO);
 
     // Keyboard space bar listener for screen transition
@@ -482,8 +482,8 @@ function startGame() {
     lives = 3;
     level = 1;
     fuel = 1000;
-    resetLander();
     generateNewLevel(currentScene);
+    resetLander();
     setScreenState(STATE_PLAYING);
     audio.init();
 
@@ -923,8 +923,8 @@ function update(time, delta) {
                     
                     this.time.delayedCall(2000, () => {
                         level++;
-                        resetLander();
                         generateNewLevel(currentScene);
+                        resetLander();
                         setScreenState(STATE_PLAYING);
                     });
                 } else {

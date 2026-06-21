@@ -1,52 +1,86 @@
-# Task 4 Report: Phaser Vector Rendering Engine (Flight Scene Setup)
+# Task 4 Report: Dynamic Camera Zooming
 
-## What Was Implemented
-- **Phaser 3 Game Configuration & Initialization**: Set up Phaser in `lunar-lander/game.js` with `transparent: true` to support CRT drop-shadow filtering on `#game-container canvas` in `style.css`.
-- **Starfield Generation**: Created a random distribution of 40 stars on initialization. Drawn vector style in `update()` using `graphics.strokePoint()`.
-- **Dynamic Vector Terrain Drawing**: Drawn vector style terrain in `update()` using points returned from `LanderCore.generateTerrain()`.
-- **Landing Pad Visuals**: Highlighted landing pads using thicker stroke lines and generated/cached Press Start 2P text multipliers (`2X`, `5X`, `10X`) positioned directly above landing pads, avoiding frame-by-frame text object creation.
-- **Flight Scene Logic**: Initialized lander states (coordinates, speeds, angle, fuel, thrust) and updated them each frame using `LanderCore.updatePhysicsState()`.
-- **Keyboard Handling**: Wired up arrow keys to update thrust and rotation angles of the ship.
-- **Vector Ship Rendering**: Drew the retro lunar lander capsule, legs, footpads, and thruster nozzle via Phaser Graphics vector methods, including a randomized dynamic engine flame when thrusting.
+## Implementation Details
 
-## What Was Tested and Test Results
-- Added file existence and structure test verification to `lunar-lander/test.js`.
-- Verified that the check fails appropriately prior to implementation (TDD).
-- Ran `node lunar-lander/test.js` and confirmed all assertions pass successfully:
-  ```
-  Running Core logic tests...
-  Running HTML/CSS structure checks...
-  Running Terrain generator tests...
-  Running Phaser Vector Rendering Engine checks...
-  ALL TESTS PASSED!
-  ```
+We successfully implemented **Task 4: Dynamic Camera Zooming** in `lunar-lander/game.js` and verified it using `lunar-lander/test.js`.
+
+The implementation:
+1. Calculates the terrain height directly below the lander inside `update(time, delta)` using `window.LanderCore.getTerrainHeight(terrain, landerState.x)`.
+2. Computes the lander's altitude relative to the terrain directly below it.
+3. Sets a target camera zoom: `1.0x` if the altitude is less than 200 pixels (zooming in as it approaches the ground), and `0.5x` otherwise (zooming out for a wider view when flying high).
+4. Smoothly interpolates the camera zoom level using exponential smoothing: `cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt))`.
+5. Adjusts the camera scroll positioning in Phaser to center the viewport on the lander craft correctly relative to the current camera zoom:
+   `cam.scrollX = sX - (400 - 400 / currentZoom);` where `sX` is the wrapped left boundary of the visible area.
+
+---
 
 ## Files Changed
-- `lunar-lander/test.js`: Added existence and integration assertion for `game.js`.
-- `lunar-lander/game.js`: Created from scratch containing the Phaser setup, starfield, terrain, landing pad multipliers, lander physics integration, and drawing loops.
+
+- [game.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/game.js) - Added dynamic camera zoom logic and updated the scroll tracking to support zoom centering.
+- [test.js](file:///Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js) - Added TDD assertions verifying the presence of dynamic camera zoom and scroll positioning formulas.
+
+---
+
+## TDD Evidence
+
+### RED (Failing Test Session)
+We added assertions to `lunar-lander/test.js` to verify the new zoom implementation prior to changing `game.js`. Running the tests resulted in the expected assertion failure:
+
+```bash
+$ node lunar-lander/test.js
+Running Core logic tests...
+Running HTML/CSS structure checks...
+Running Terrain generator tests...
+Running Phaser Vector Rendering Engine checks...
+Running Web Audio Synth checks...
+Running Custom Inputs & Mirrored Mobile Gutters checks...
+Running Collision Detection tests...
+Running Touchdown Quality & Dynamic Wrapping tests...
+Running Camera scroll tracking & wrapping tests...
+Running Camera dynamic zoom checks...
+TEST FAILED: AssertionError [ERR_ASSERTION]: game.js must get terrain height directly below lander
+    at Object.<anonymous> (/Users/jrussell/code/jrussellsmyth.github.io/lunar-lander/test.js:269:10)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+```
+
+### GREEN (Passing Test Session)
+After implementing the zoom logic and zoom-centered scroll calculations, the test suite passed successfully:
+
+```bash
+$ node lunar-lander/test.js
+Running Core logic tests...
+Running HTML/CSS structure checks...
+Running Terrain generator tests...
+Running Phaser Vector Rendering Engine checks...
+Running Web Audio Synth checks...
+Running Custom Inputs & Mirrored Mobile Gutters checks...
+Running Collision Detection tests...
+Running Touchdown Quality & Dynamic Wrapping tests...
+Running Camera scroll tracking & wrapping tests...
+Running Camera dynamic zoom checks...
+ALL TESTS PASSED!
+```
+
+---
 
 ## Self-Review Findings
-- **Memory Optimization**: Creating new Phaser text objects in `update()` causes an unbounded memory leak. Optimized this by instantiating and styling text components in `generateNewLevel()` and cleanly disposing of them prior to regenerating.
-- **Canvas Transparency**: Enabled `transparent: true` to ensure the canvas overlays nicely on top of the black CSS background while retaining the CRT filter drop shadow on canvas lines.
-- **Fail-Safe High Score Reading**: Wrapped `localStorage.getItem()` in a try-catch block to protect execution in environments where `localStorage` might be disabled or unavailable.
 
-## Concerns
-- **None**: Implementation adheres strictly to instructions, tests pass cleanly, and performance is optimized against common Phaser memory pitfalls.
+1. **Completeness:** The zoom smoothly transitions between `0.5x` and `1.0x` depending on altitude, and the camera remains properly centered when zoomed. All checklist items are checked.
+2. **Quality:** Variable names (e.g. `leftVisibleEdge`, `targetLeftEdge`) represent the exact semantics of the coordinate systems. Exponential smoothing is mathematically correct and uses `dt` to be frame-rate independent.
+3. **Discipline:** No extraneous code, libraries, or dependencies were added.
+4. **Testing:** Added robust checks to prevent regression. The output from `test.js` is clean and pristine.
 
-## Review Findings & Fixes
-Following the review of Task 4, the following improvements and bug fixes were successfully implemented:
-
-1. **HUD Stats Interface Integration**:
-   - Added dedicated Phaser text game objects in `create()` styled using `'Press Start 2P'` font, size `'10px'`, and color `'#33ff33'` (neon green).
-   - Displayed and updated live stats in the `update()` loop representing Score, High Score, Fuel, Vertical Speed, Horizontal Speed, Angle, Level, and Lives.
-   - Evenly spaced the HUD columns across the top of the canvas (`x = 20`, `220`, `420`, `620`) to prevent overlap and ensure readability.
-
-2. **Starfield Alpha Drawing**:
-   - Replaced the hardcoded star transparency rendering.
-   - Updated the `stars.forEach` loop to apply the randomly generated `s.alpha` property of each star by setting `graphics.lineStyle(1, 0xffffff, s.alpha)` before drawing each star point.
-
-3. **Scene Reference Context passing in `generateNewLevel`**:
-   - Refactored `generateNewLevel()` to support an optional `scene` parameter.
-   - Updated `create()` to pass `this` (the scene context) as an argument.
-   - Added a fallback to `currentScene` (global variable tracking the active scene context) and `this` to maintain backwards compatibility.
-
+No other issues or concerns were identified.

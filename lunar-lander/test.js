@@ -271,6 +271,12 @@ try {
   assert.ok(gameContent.includes('cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt))') || gameContent.includes('cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt))'), "game.js must LERP/interpolate camera zoom");
   assert.ok(gameContent.includes('sX - (400 - 400 / currentZoom)') || gameContent.includes('sX - (400 - 400 / cam.zoom)'), "game.js must adjust camera scroll centered relative to zoom");
 
+  // Verify generateTerrain dynamic multipliers math
+  const testTerrain = Core.generateTerrain(4000, 600, 12, 1.0);
+  assert.strictEqual(testTerrain.landingPads[0].multiplier, Core.calculateLandingMultiplier(250));
+  assert.strictEqual(testTerrain.landingPads[1].multiplier, Core.calculateLandingMultiplier(120));
+  assert.strictEqual(testTerrain.landingPads[2].multiplier, Core.calculateLandingMultiplier(70));
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);
