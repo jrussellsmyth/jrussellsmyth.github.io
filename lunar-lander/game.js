@@ -602,10 +602,13 @@ function resetLander() {
     levelTime = 0;
     landerTrail = [];
     debris = [];
+    
+    const spawnLeft = Math.random() < 0.5;
+    
     landerState = {
-        x: 400,
+        x: spawnLeft ? 20 : 780,
         y: 80,
-        vx: Math.random() * 40 - 20,
+        vx: spawnLeft ? 75 : -75,
         vy: 10,
         angle: 0,
         fuel: fuel,

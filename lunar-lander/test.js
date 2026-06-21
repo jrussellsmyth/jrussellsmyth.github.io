@@ -344,6 +344,160 @@ try {
     "game.js must push debris items with a history attribute"
   );
 
+  // Initial Boundary Spawn checks (Task 6 verification)
+  console.log("Running Initial Boundary Spawn checks...");
+  const vm = require('vm');
+  const gameCode = fs.readFileSync(gamePath, 'utf8');
+  
+  // Wrap game.js content and append export of resetLander and landerState
+  const wrappedCode = `
+    ${gameCode}
+    module.exports = {
+      resetLander,
+      getLanderState: () => landerState
+    };
+  `;
+
+  let gameConfig;
+
+  const mockGlobals = {
+    window: {
+      localStorage: {
+        getItem: () => '0',
+        setItem: () => {}
+      },
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      matchMedia: () => ({ matches: false }),
+      LanderCore: Core
+    },
+    document: {
+      documentElement: {
+        requestFullscreen: () => {}
+      },
+      getElementById: () => null
+    },
+    localStorage: {
+      getItem: () => '0',
+      setItem: () => {}
+    },
+    Phaser: {
+      AUTO: 0,
+      Scale: {
+        FIT: 1,
+        CENTER_BOTH: 2
+      },
+      Game: class {
+        constructor(config) {
+          gameConfig = config;
+        }
+      },
+      Input: {
+        Keyboard: {
+          KeyCodes: {
+            W: 1, S: 2, A: 3, D: 4
+          }
+        }
+      }
+    }
+  };
+
+  const sandbox = {
+    console,
+    parseInt,
+    parseFloat,
+    Math,
+    setInterval,
+    clearInterval,
+    setTimeout,
+    clearTimeout,
+    window: mockGlobals.window,
+    document: mockGlobals.document,
+    localStorage: mockGlobals.localStorage,
+    Phaser: mockGlobals.Phaser,
+    module: { exports: {} }
+  };
+
+  vm.createContext(sandbox);
+  vm.runInContext(wrappedCode, sandbox);
+
+  // Now retrieve gameConfig and run the scene setup manually!
+  const config = gameConfig;
+  const scene = {
+    add: {
+      graphics: () => ({}),
+      text: () => {
+        const t = {
+          setScrollFactor: () => t,
+          setOrigin: () => t,
+          setAlpha: () => t,
+          setVisible: () => t,
+          setText: () => t,
+          destroy: () => {}
+        };
+        return t;
+      }
+    },
+    input: {
+      keyboard: {
+        createCursorKeys: () => ({}),
+        addKeys: () => ({}),
+        on: () => {}
+      },
+      on: () => {}
+    },
+    cameras: {
+      add: () => ({
+        setScroll: () => {},
+        ignore: () => {}
+      }),
+      main: {
+        ignore: () => {},
+        scrollX: 0
+      }
+    },
+    game: {
+      events: {
+        on: () => {}
+      }
+    }
+  };
+
+  config.scene.preload.call(scene);
+  config.scene.create.call(scene);
+
+  const { resetLander, getLanderState } = sandbox.module.exports;
+  
+  // Verify resetLander multiple times to make sure both left and right spawn positions/velocities occur and only valid options are generated
+  let sawLeft = false;
+  let sawRight = false;
+  
+  for (let i = 0; i < 100; i++) {
+    resetLander();
+    const state = getLanderState();
+    
+    assert.ok(state.x === 20 || state.x === 780, `lander x (${state.x}) must be 20 or 780`);
+    assert.ok(state.vx === 75 || state.vx === -75, `lander vx (${state.vx}) must be 75 or -75`);
+    
+    if (state.x === 20) {
+      assert.strictEqual(state.vx, 75, "Left spawn must have vx = 75");
+      sawLeft = true;
+    } else {
+      assert.strictEqual(state.vx, -75, "Right spawn must have vx = -75");
+      sawRight = true;
+    }
+    
+    assert.strictEqual(state.y, 80, "y must be 80");
+    assert.strictEqual(state.vy, 10, "vy must be 10");
+    assert.strictEqual(state.angle, 0, "angle must be 0");
+    assert.strictEqual(state.thrust, 0, "thrust must be 0");
+    assert.strictEqual(state.targetSteerRate, 0, "targetSteerRate must be 0");
+    assert.strictEqual(state.targetSteerAngle, 0, "targetSteerAngle must be 0");
+  }
+  
+  assert.ok(sawLeft, "Should have seen at least one left spawn");
+  assert.ok(sawRight, "Should have seen at least one right spawn");
+
   console.log("ALL TESTS PASSED!");
 } catch (err) {
   console.error("TEST FAILED:", err);
