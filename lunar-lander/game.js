@@ -427,7 +427,16 @@ function create() {
     bindButton('btn-right-right', activeRightButtons, 'isRightButtonActive');
 
     // Suspend and resume the Web Audio context when the tab loses/gains focus
-    this.game.events.on('blur', () => { if (audio.ctx) audio.ctx.suspend(); });
+    this.game.events.on('blur', () => {
+        if (audio.ctx) audio.ctx.suspend();
+        activeThrustButtons.clear();
+        activeLeftButtons.clear();
+        activeRightButtons.clear();
+        window.isThrustingButtonActive = false;
+        window.isLeftButtonActive = false;
+        window.isRightButtonActive = false;
+        document.querySelectorAll('.gutter .control-btn').forEach(btn => btn.classList.remove('active'));
+    });
     this.game.events.on('focus', () => { if (audio.ctx) audio.ctx.resume(); });
 }
 
@@ -595,6 +604,7 @@ function generateNewLevel(scene) {
 function triggerExplosion() {
     audio.playExplosion();
     debris = [];
+    landerTrail = [];
     
     const rad = (landerState.angle * Math.PI) / 180;
     const cos = Math.cos(rad);
@@ -651,6 +661,15 @@ function triggerExplosion() {
 
 function updateAndDrawDebris(worldGraphics, trailGraphics, dt, cam) {
     const gravity = 25.0;
+    const cameraCenter = cam.scrollX + 400;
+    const toScreenX = (wx) => {
+        let deltaX = wx - cameraCenter;
+        deltaX = ((deltaX + 2000) % 4000 + 4000) % 4000 - 2000;
+        return 400 + deltaX * cam.zoom;
+    };
+    const toScreenY = (wy) => {
+        return 300 + (wy - 300) * cam.zoom;
+    };
     
     debris.forEach(d => {
         if (!d.history) {
@@ -674,16 +693,6 @@ function updateAndDrawDebris(worldGraphics, trailGraphics, dt, cam) {
             const y1_world = h.y + d.lx1 * sin + d.ly1 * cos;
             const x2_world = h.x + d.lx2 * cos - d.ly2 * sin;
             const y2_world = h.y + d.lx2 * sin + d.ly2 * cos;
-
-            const cameraCenter = cam.scrollX + 400;
-            const toScreenX = (wx) => {
-                let deltaX = wx - cameraCenter;
-                deltaX = ((deltaX + 2000) % 4000 + 4000) % 4000 - 2000;
-                return 400 + deltaX * cam.zoom;
-            };
-            const toScreenY = (wy) => {
-                return 300 + (wy - 300) * cam.zoom;
-            };
 
             trailGraphics.lineBetween(toScreenX(x1_world), toScreenY(y1_world), toScreenX(x2_world), toScreenY(y2_world));
         });
