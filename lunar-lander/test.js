@@ -271,6 +271,14 @@ try {
   assert.ok(gameContent.includes('cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt))') || gameContent.includes('cam.zoom += (targetZoom - cam.zoom) * (1 - Math.exp(-8 * dt))'), "game.js must LERP/interpolate camera zoom");
   assert.ok(gameContent.includes('sX - (400 - 400 / currentZoom)') || gameContent.includes('sX - (400 - 400 / cam.zoom)'), "game.js must adjust camera scroll centered relative to zoom");
 
+  // Camera Separation checks (Task 2 verification)
+  console.log("Running HUD Camera separation checks...");
+  assert.ok(gameContent.includes('this.hudCamera = this.cameras.add('), "game.js must add HUD camera");
+  assert.ok(gameContent.includes('this.hudCamera.setScroll(0, 0)'), "game.js must set HUD camera scroll");
+  assert.ok(gameContent.includes('this.cameras.main.ignore('), "game.js main camera must ignore HUD elements");
+  assert.ok(gameContent.includes('this.hudCamera.ignore('), "game.js HUD camera must ignore game world graphics elements");
+  assert.ok(gameContent.includes('activeScene.hudCamera.ignore(txt)'), "game.js must ignore pad multiplier labels on HUD camera");
+
   // Verify generateTerrain dynamic multipliers math
   const testTerrain = Core.generateTerrain(4000, 600, 12, 1.0);
   assert.strictEqual(testTerrain.landingPads[0].multiplier, Core.calculateLandingMultiplier(250));

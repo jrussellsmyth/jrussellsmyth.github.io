@@ -290,6 +290,29 @@ function create() {
         align: 'center'
     }).setOrigin(0.5).setScrollFactor(0);
 
+    // Create a transparent HUD camera locked at 1.0 zoom overlaying the main camera
+    this.hudCamera = this.cameras.add(0, 0, 800, 600);
+    this.hudCamera.setScroll(0, 0);
+
+    // Main camera ignores HUD texts
+    const hudElements = [
+        scoreText,
+        fuelText,
+        levelLivesText,
+        speedText,
+        screenTitleText,
+        screenDetailText,
+        screenPromptText
+    ];
+    this.cameras.main.ignore(hudElements);
+
+    // HUD camera ignores game world graphics objects
+    this.hudCamera.ignore([
+        graphics,
+        landerGraphics,
+        landerGraphicsWrap
+    ]);
+
     generateNewLevel(this);
     resetLander();
     setScreenState(STATE_INTRO);
@@ -615,6 +638,12 @@ function generateNewLevel(scene) {
                 fontSize: '8px',
                 color: '#33ff33'
             }).setOrigin(0.5).setAlpha(0.7);
+            
+            // Ignore pad multiplier labels on HUD camera so they scale with main camera zoom
+            if (activeScene.hudCamera) {
+                activeScene.hudCamera.ignore(txt);
+            }
+            
             txt.baseX = baseX;
             padTexts.push(txt);
             if (gameState !== STATE_PLAYING) {
