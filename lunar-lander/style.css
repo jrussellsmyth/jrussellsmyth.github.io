@@ -63,14 +63,15 @@ body {
 }
 
 .gutter {
-    width: 120px;
+    width: 80px;
     background-color: #0d0d0d;
     border-right: 2px solid #ffffff;
-    display: none; /* Hidden by default on desktop, shown on mobile */
+    display: none; /* Hidden on desktop */
     flex-direction: column;
-    justify-content: space-around;
+    justify-content: flex-end;
     align-items: center;
     padding: 10px;
+    height: 100%;
 }
 
 .right-gutter {
@@ -78,87 +79,30 @@ body {
     border-left: 2px solid #ffffff;
 }
 
-.control-box {
+.gutter-controls-container {
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.rot-buttons {
+    display: flex;
+    gap: 6px;
     width: 100%;
 }
 
-.control-box label {
+.rot-buttons .control-btn {
+    flex: 1;
+    height: 45px;
     font-size: 8px;
-    margin-bottom: 10px;
-    text-align: center;
-    letter-spacing: 1px;
 }
 
-.slider-container {
-    position: relative;
-}
-
-.slider {
-    -webkit-appearance: none;
-    appearance: none;
-    background: #222;
-    border: 1px solid #ffffff;
-    outline: none;
-    border-radius: 4px;
-}
-
-.slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: #ffffff;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 10px #ffffff;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.slider::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 15px #ffffff, 0 0 5px #fff;
-}
-
-.slider::-moz-range-thumb {
-    border: none;
-    width: 20px;
-    height: 20px;
-    background: #ffffff;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 10px #ffffff;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.slider::-moz-range-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 15px #ffffff, 0 0 5px #fff;
-}
-
-.vertical-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 15px;
-    height: 180px;
-    writing-mode: vertical-lr;
-    direction: rtl;
-}
-
-.horizontal-slider {
-    width: 90px;
-    height: 15px;
-}
-
-/* Ensure gutters are hidden, mobile controls are hidden on desktop */
-.gutter {
-    display: none !important;
-}
-
-#mobile-controls {
-    display: none;
+.btn-thrust {
+    width: 100%;
+    height: 60px;
+    font-size: 10px;
 }
 
 #landscape-warning {
@@ -195,7 +139,8 @@ body {
     max-width: 80%;
 }
 
-@media (pointer: coarse) and (orientation: landscape) {
+/* Landscape/portrait warn overlays on mobile coarse */
+@media (pointer: coarse) and (orientation: portrait) {
     #landscape-warning {
         display: flex;
     }
@@ -203,75 +148,26 @@ body {
 
 @media (pointer: coarse) {
     #game-wrapper {
-        flex-direction: column;
+        flex-direction: row;
         width: 100vw;
-        height: 100%;
+        height: 100vh;
+        height: 100dvh;
         max-width: none;
         max-height: none;
         border: none;
         box-shadow: none;
     }
-    
+
     #game-container {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 4 / 3;
-        flex-grow: 0;
-    }
-    
-    #mobile-controls {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
         flex-grow: 1;
-        padding: 20px;
-        background-color: #0d0d0d;
-        border-top: 4px double #ffffff;
-        gap: 20px;
+        height: 100%;
+        width: auto;
     }
-    
-    .thrust-container {
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
+
+    .gutter {
+        display: flex !important;
     }
-    
-    .thrust-container .control-btn {
-        width: 100%;
-        max-width: 160px;
-        height: 80px;
-        font-size: 14px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .rotate-container {
-        flex: 1.5;
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-    }
-    
-    .rotate-container .control-btn {
-        flex: 1;
-        max-width: 110px;
-        height: 80px;
-        font-size: 11px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
+
     .control-btn {
         background-color: transparent;
         border: 2px solid #ffffff;
@@ -287,7 +183,7 @@ body {
         transition: background-color 0.1s ease, box-shadow 0.1s ease, transform 0.05s ease;
         outline: none;
     }
-    
+
     .control-btn:active, .control-btn.active {
         background-color: rgba(255, 255, 255, 0.2);
         box-shadow: 0 0 20px #ffffff, inset 0 0 10px #ffffff;
