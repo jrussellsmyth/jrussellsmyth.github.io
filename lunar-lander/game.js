@@ -1012,7 +1012,7 @@ function update(time, delta) {
     }
 
           // Draw lander trails in screen coordinates
-        this.hudTrailGraphics.clear();
+        hudTrailGraphics.clear();
         landerTrail.forEach((t, i) => {
             const alpha = TRAIL_ALPHAS[TRAIL_ALPHAS.length - landerTrail.length + i];
             
@@ -1023,7 +1023,7 @@ function update(time, delta) {
             const screenX = 400 + deltaX * cam.zoom;
             const screenY = 300 + (t.y - 300) * cam.zoom;
             
-            drawVectorLander(this.hudTrailGraphics, screenX, screenY, t.angle, t.thrust, alpha);
+            drawVectorLander(hudTrailGraphics, screenX, screenY, t.angle, t.thrust, alpha);
         });
 
         if (gameState === STATE_PLAYING) {
@@ -1072,7 +1072,7 @@ function update(time, delta) {
             audio.stopWarningAlarm();
             landerGraphics.clear();
             landerGraphicsWrap.setVisible(false);
-            updateAndDrawDebris(graphics, this.hudTrailGraphics, dt, this.cameras.main);
+            updateAndDrawDebris(graphics, hudTrailGraphics, dt, this.cameras.main);
         } else {
             audio.setThrust(0);
             audio.stopWarningAlarm();
