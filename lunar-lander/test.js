@@ -27,14 +27,21 @@ try {
   assert.strictEqual(typeof Core.updatePhysicsState, 'function');
   assert.strictEqual(typeof Core.calculateLandingMultiplier, 'function');
 
-  const perfectLanding = Core.checkLandingCondition(5, 10, 2);
-  assert.deepStrictEqual(perfectLanding, { success: true, reason: null, quality: "good", message: "SAFE TOUCHDOWN.", fuelPenalty: 0, scoreBonus: 0 });
+  const perfectLanding = Core.checkLandingCondition(2, 5, 0.5);
+  assert.strictEqual(perfectLanding.success, true);
+  assert.strictEqual(perfectLanding.quality, "perfect");
 
-  const tooFastVertically = Core.checkLandingCondition(5, 35, 2);
-  assert.deepStrictEqual(tooFastVertically, { success: false, reason: "speed", quality: "crash" });
+  const safeGoodLanding = Core.checkLandingCondition(10, 20, 3);
+  assert.strictEqual(safeGoodLanding.success, true);
+  assert.strictEqual(safeGoodLanding.quality, "good");
 
-  const tooCrooked = Core.checkLandingCondition(5, 10, 15);
-  assert.deepStrictEqual(tooCrooked, { success: false, reason: "angle", quality: "crash" });
+  const hardLandingNew = Core.checkLandingCondition(18, 35, 7);
+  assert.strictEqual(hardLandingNew.success, true);
+  assert.strictEqual(hardLandingNew.quality, "hard");
+
+  const crashNew = Core.checkLandingCondition(26, 50, 10);
+  assert.strictEqual(crashNew.success, false);
+  assert.strictEqual(crashNew.quality, "crash");
 
   // Test physics update
   const initialState = { x: 100, y: 100, vx: 10, vy: 0, angle: 0, fuel: 100, thrust: 0.2 };

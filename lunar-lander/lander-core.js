@@ -2,24 +2,30 @@ const GRAVITY = 25.0; // Px/s^2
 const THRUST_ACCEL = 60.0; // Max thrust accel px/s^2
 const FUEL_BURN_RATE = 15.0; // Fuel units per second at 100% thrust
 
-function checkLandingCondition(vx, vy, angle) {
-  const maxSafeVx = 15;
-  const maxSafeVy = 30;
-  const maxSafeAngle = 5; // degrees
+const MAX_PERFECT_VX = 4;
+const MAX_PERFECT_VY = 8;
+const MAX_PERFECT_ANGLE = 1;
 
+const MAX_GOOD_VX = 15;
+const MAX_GOOD_VY = 30;
+const MAX_GOOD_ANGLE = 5;
+
+const MAX_SAFE_VX = 25;
+const MAX_SAFE_VY = 45;
+const MAX_SAFE_ANGLE = 8;
+
+function checkLandingCondition(vx, vy, angle) {
   const absVx = Math.abs(vx);
   const absVy = Math.abs(vy);
   const absAngle = Math.abs(angle);
 
-  if (absVx > maxSafeVx || absVy > maxSafeVy) {
-    return { success: false, reason: "speed", quality: "crash" };
-  }
-  if (absAngle > maxSafeAngle) {
-    return { success: false, reason: "angle", quality: "crash" };
+  // 1. Crash conditions
+  if (absVx > MAX_SAFE_VX || absVy > MAX_SAFE_VY || absAngle > MAX_SAFE_ANGLE) {
+    return { success: false, reason: absAngle > MAX_SAFE_ANGLE ? "angle" : "speed", quality: "crash" };
   }
 
-  // Perfect Touchdown Conditions
-  if (absVx <= 4 && absVy <= 8 && absAngle <= 1) {
+  // 2. Perfect Touchdown Conditions
+  if (absVx <= MAX_PERFECT_VX && absVy <= MAX_PERFECT_VY && absAngle <= MAX_PERFECT_ANGLE) {
     const messages = [
       "PERFECT LANDING! THE EAGLE HAS LANDED.",
       "FLAWLESS TOUCHDOWN! OUTSTANDING WORK.",
@@ -36,8 +42,8 @@ function checkLandingCondition(vx, vy, angle) {
     };
   }
 
-  // Hard Touchdown Conditions
-  if (absVx > 10 || absVy > 20 || absAngle > 3) {
+  // 3. Hard Touchdown Conditions
+  if (absVx > MAX_GOOD_VX || absVy > MAX_GOOD_VY || absAngle > MAX_GOOD_ANGLE) {
     const messages = [
       "HARD LANDING HAS DAMAGED YOUR LIFE SUPPORT!",
       "YOU HAVE LANDED BUT THIS IS A ONE WAY TRIP!"
@@ -53,7 +59,7 @@ function checkLandingCondition(vx, vy, angle) {
     };
   }
 
-  // Good Touchdown Conditions
+  // 4. Good Touchdown Conditions
   return {
     success: true,
     reason: null,
