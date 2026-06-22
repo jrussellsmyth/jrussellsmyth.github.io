@@ -238,12 +238,12 @@ try {
   assert.strictEqual(perfLanding.scoreBonus, 500);
   assert.strictEqual(perfLanding.fuelPenalty, 0);
 
-  const hardLanding = Core.checkLandingCondition(12, 22, 4);
+  const hardLanding = Core.checkLandingCondition(18, 35, 7);
   assert.strictEqual(hardLanding.success, true);
   assert.strictEqual(hardLanding.quality, "hard");
   assert.strictEqual(hardLanding.fuelPenalty, 500);
 
-  const failLanding = Core.checkLandingCondition(18, 35, 8);
+  const failLanding = Core.checkLandingCondition(26, 50, 10);
   assert.strictEqual(failLanding.success, false);
 
   // Camera scroll tracking and wrapping simulation tests
