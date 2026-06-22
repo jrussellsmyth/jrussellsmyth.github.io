@@ -236,6 +236,7 @@ function create() {
     hudTextGraphics = this.add.graphics();
     worldTextGraphics = this.add.graphics();
     hudTrailGraphics = this.add.graphics();
+    this.hudTrailGraphics = hudTrailGraphics;
     cursorKeys = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.W,
