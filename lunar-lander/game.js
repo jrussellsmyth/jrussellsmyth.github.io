@@ -733,10 +733,10 @@ function updateAndDrawDebris(worldGraphics, trailGraphics, dt, cam) {
     });
 }
 
-function drawVectorLander(g, x, y, angle, thrust, alpha = 1.0) {
+function drawVectorLander(g, x, y, angle, thrust, alpha = 1.0, scale = 1.0) {
     const rad = (angle * Math.PI) / 180;
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
+    const cos = Math.cos(rad) * scale;
+    const sin = Math.sin(rad) * scale;
 
     const transformX = (px, py) => x + px * cos - py * sin;
     const transformY = (px, py) => y + px * sin + py * cos;
@@ -771,7 +771,7 @@ function drawVectorLander(g, x, y, angle, thrust, alpha = 1.0) {
         g.lineStyle(1.5, 0xffffff, alpha);
         g.beginPath();
         g.moveTo(transformX(-3, 9), transformY(-3, 9));
-        const flameLen = 9 + thrust * 25 * (0.8 + Math.random() * 0.4);
+        const flameLen = (9 + thrust * 25 * (0.8 + Math.random() * 0.4)) * scale;
         g.lineTo(transformX(0, flameLen), transformY(0, flameLen));
         g.lineTo(transformX(3, 9), transformY(3, 9));
         g.strokePath();
@@ -1024,7 +1024,7 @@ function update(time, delta) {
             const screenX = 400 + deltaX * cam.zoom;
             const screenY = 300 + (t.y - 300) * cam.zoom;
             
-            drawVectorLander(hudTrailGraphics, screenX, screenY, t.angle, t.thrust, alpha);
+            drawVectorLander(hudTrailGraphics, screenX, screenY, t.angle, t.thrust, alpha, cam.zoom);
         });
 
         if (gameState === STATE_PLAYING) {
