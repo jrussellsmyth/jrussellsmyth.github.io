@@ -169,8 +169,8 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-const TRAIL_MAX_LENGTH = 3;
 const TRAIL_ALPHAS = [0.05, 0.10, 0.20]; // from oldest to newest
+const TRAIL_MAX_LENGTH = TRAIL_ALPHAS.length;
 
 let graphics;
 let landerGraphics;
@@ -685,7 +685,7 @@ function updateAndDrawDebris(worldGraphics, trailGraphics, dt, cam) {
 
         // Draw historical segments in screen space (unzoomed) on trailGraphics
         d.history.forEach((h, index) => {
-            const alpha = TRAIL_ALPHAS[index];
+            const alpha = TRAIL_ALPHAS[TRAIL_ALPHAS.length - d.history.length + index];
             trailGraphics.lineStyle(2, 0xffffff, alpha);
 
             const rad = (h.angle * Math.PI) / 180;
@@ -1014,7 +1014,7 @@ function update(time, delta) {
           // Draw lander trails in screen coordinates
         this.hudTrailGraphics.clear();
         landerTrail.forEach((t, i) => {
-            const alpha = TRAIL_ALPHAS[i];
+            const alpha = TRAIL_ALPHAS[TRAIL_ALPHAS.length - landerTrail.length + i];
             
             const cameraCenter = cam.scrollX + 400;
             let deltaX = t.x - cameraCenter;

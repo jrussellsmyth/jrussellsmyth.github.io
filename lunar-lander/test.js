@@ -27,21 +27,62 @@ try {
   assert.strictEqual(typeof Core.updatePhysicsState, 'function');
   assert.strictEqual(typeof Core.calculateLandingMultiplier, 'function');
 
-  const perfectLanding = Core.checkLandingCondition(2, 5, 0.5);
+  // Perfect Landing: all under perfect limits
+  const perfectLanding = Core.checkLandingCondition(
+    Core.MAX_PERFECT_VX - 1,
+    Core.MAX_PERFECT_VY - 1,
+    Core.MAX_PERFECT_ANGLE - 0.5
+  );
   assert.strictEqual(perfectLanding.success, true);
   assert.strictEqual(perfectLanding.quality, "perfect");
+  assert.strictEqual(perfectLanding.reason, null);
+  assert.ok(typeof perfectLanding.message === 'string' && perfectLanding.message.length > 0);
+  assert.strictEqual(perfectLanding.scoreBonus, 500);
+  assert.strictEqual(perfectLanding.fuelPenalty, 0);
 
-  const safeGoodLanding = Core.checkLandingCondition(10, 20, 3);
+  // Good Landing: at least one exceeds perfect limits but all are within good limits
+  const safeGoodLanding = Core.checkLandingCondition(
+    Core.MAX_GOOD_VX,
+    Core.MAX_GOOD_VY,
+    Core.MAX_GOOD_ANGLE
+  );
   assert.strictEqual(safeGoodLanding.success, true);
   assert.strictEqual(safeGoodLanding.quality, "good");
+  assert.strictEqual(safeGoodLanding.reason, null);
+  assert.ok(typeof safeGoodLanding.message === 'string' && safeGoodLanding.message.length > 0);
+  assert.strictEqual(safeGoodLanding.scoreBonus, 0);
+  assert.strictEqual(safeGoodLanding.fuelPenalty, 0);
 
-  const hardLandingNew = Core.checkLandingCondition(18, 35, 7);
+  // Hard Landing: at least one exceeds good limits but all are within safe limits
+  const hardLandingNew = Core.checkLandingCondition(
+    Core.MAX_GOOD_VX + 1,
+    Core.MAX_GOOD_VY + 1,
+    Core.MAX_GOOD_ANGLE + 0.1
+  );
   assert.strictEqual(hardLandingNew.success, true);
   assert.strictEqual(hardLandingNew.quality, "hard");
+  assert.strictEqual(hardLandingNew.reason, null);
+  assert.ok(typeof hardLandingNew.message === 'string' && hardLandingNew.message.length > 0);
+  assert.strictEqual(hardLandingNew.scoreBonus, 0);
+  assert.strictEqual(hardLandingNew.fuelPenalty, 500);
 
-  const crashNew = Core.checkLandingCondition(26, 50, 10);
-  assert.strictEqual(crashNew.success, false);
-  assert.strictEqual(crashNew.quality, "crash");
+  // Crash due to speed (vx)
+  const crashVx = Core.checkLandingCondition(Core.MAX_SAFE_VX + 1, 0, 0);
+  assert.strictEqual(crashVx.success, false);
+  assert.strictEqual(crashVx.quality, "crash");
+  assert.strictEqual(crashVx.reason, "speed");
+
+  // Crash due to speed (vy)
+  const crashVy = Core.checkLandingCondition(0, Core.MAX_SAFE_VY + 1, 0);
+  assert.strictEqual(crashVy.success, false);
+  assert.strictEqual(crashVy.quality, "crash");
+  assert.strictEqual(crashVy.reason, "speed");
+
+  // Crash due to angle
+  const crashAngle = Core.checkLandingCondition(0, 0, Core.MAX_SAFE_ANGLE + 1);
+  assert.strictEqual(crashAngle.success, false);
+  assert.strictEqual(crashAngle.quality, "crash");
+  assert.strictEqual(crashAngle.reason, "angle");
 
   // Test physics update
   const initialState = { x: 100, y: 100, vx: 10, vy: 0, angle: 0, fuel: 100, thrust: 0.2 };
@@ -232,19 +273,38 @@ try {
   assert.strictEqual(wrapNext.x, 5); // 3995 + 10 - 4000 = 5
 
   // 2. Verify landing classification results
-  const perfLanding = Core.checkLandingCondition(2, 5, 0.5);
+  const perfLanding = Core.checkLandingCondition(
+    Core.MAX_PERFECT_VX - 1,
+    Core.MAX_PERFECT_VY - 1,
+    Core.MAX_PERFECT_ANGLE - 0.5
+  );
   assert.strictEqual(perfLanding.success, true);
   assert.strictEqual(perfLanding.quality, "perfect");
   assert.strictEqual(perfLanding.scoreBonus, 500);
   assert.strictEqual(perfLanding.fuelPenalty, 0);
+  assert.strictEqual(perfLanding.reason, null);
+  assert.ok(typeof perfLanding.message === 'string' && perfLanding.message.length > 0);
 
-  const hardLanding = Core.checkLandingCondition(18, 35, 7);
+  const hardLanding = Core.checkLandingCondition(
+    Core.MAX_GOOD_VX + 1,
+    Core.MAX_GOOD_VY + 1,
+    Core.MAX_GOOD_ANGLE + 0.1
+  );
   assert.strictEqual(hardLanding.success, true);
   assert.strictEqual(hardLanding.quality, "hard");
   assert.strictEqual(hardLanding.fuelPenalty, 500);
+  assert.strictEqual(hardLanding.scoreBonus, 0);
+  assert.strictEqual(hardLanding.reason, null);
+  assert.ok(typeof hardLanding.message === 'string' && hardLanding.message.length > 0);
 
-  const failLanding = Core.checkLandingCondition(26, 50, 10);
+  const failLanding = Core.checkLandingCondition(
+    Core.MAX_SAFE_VX + 1,
+    Core.MAX_SAFE_VY + 1,
+    Core.MAX_SAFE_ANGLE + 1
+  );
   assert.strictEqual(failLanding.success, false);
+  assert.strictEqual(failLanding.quality, "crash");
+  assert.ok(failLanding.reason === "speed" || failLanding.reason === "angle");
 
   // Camera scroll tracking and wrapping simulation tests
   console.log("Running Camera scroll tracking & wrapping tests...");

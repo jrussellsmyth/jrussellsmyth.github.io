@@ -2,17 +2,17 @@ const GRAVITY = 25.0; // Px/s^2
 const THRUST_ACCEL = 60.0; // Max thrust accel px/s^2
 const FUEL_BURN_RATE = 15.0; // Fuel units per second at 100% thrust
 
-const MAX_PERFECT_VX = 4;
-const MAX_PERFECT_VY = 8;
-const MAX_PERFECT_ANGLE = 1;
+const MAX_PERFECT_VX = 4; // px/s
+const MAX_PERFECT_VY = 8; // px/s
+const MAX_PERFECT_ANGLE = 1; // degrees
 
-const MAX_GOOD_VX = 15;
-const MAX_GOOD_VY = 30;
-const MAX_GOOD_ANGLE = 5;
+const MAX_GOOD_VX = 15; // px/s
+const MAX_GOOD_VY = 30; // px/s
+const MAX_GOOD_ANGLE = 5; // degrees
 
-const MAX_SAFE_VX = 25;
-const MAX_SAFE_VY = 45;
-const MAX_SAFE_ANGLE = 8;
+const MAX_SAFE_VX = 25; // px/s
+const MAX_SAFE_VY = 45; // px/s
+const MAX_SAFE_ANGLE = 8; // degrees
 
 function checkLandingCondition(vx, vy, angle) {
   const absVx = Math.abs(vx);
@@ -313,5 +313,14 @@ module.exports = {
   calculateLandingMultiplier,
   generateTerrain,
   getTerrainHeight,
-  checkCollision
+  checkCollision,
+  MAX_PERFECT_VX,
+  MAX_PERFECT_VY,
+  MAX_PERFECT_ANGLE,
+  MAX_GOOD_VX,
+  MAX_GOOD_VY,
+  MAX_GOOD_ANGLE,
+  MAX_SAFE_VX,
+  MAX_SAFE_VY,
+  MAX_SAFE_ANGLE
 };
